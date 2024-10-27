@@ -335,6 +335,7 @@ function Graph1_Overall()
   chartContainer_graph1.selectAll("path_connect_lines")
     .data(afterCleanData_Graph1)
     .enter().append("path")
+    .attr("class", "path_lines")
     .attr("d", path)
     .style("fill", "none")
     .style("stroke", d => getColor(d.year))
@@ -376,35 +377,50 @@ function Graph1_Overall()
     .style("font-weight", "bold");
 
   /** Add a onClick event for the dimension, user can filter the lines by click the tick on the dimension */
+  let lastClicked = { dimension: null, value: null };
+
   chartContainer_graph1.selectAll("g .tick text")
     .on("click", function (event, clickedValue)
     {
       // Get the dimension of the clicked tick
       const clickedDimension = d3.select(this.parentNode.parentNode).datum();
-      console.log("点击的维度:", clickedDimension, "刻度值:", clickedValue);
 
-      const filteredData = afterCleanData_Graph1.filter(d =>
+      // Check if the same tick was clicked again
+      const isSameClick = lastClicked.dimension === clickedDimension && lastClicked.value === clickedValue;
+
+      if (isSameClick)
       {
-        if (clickedDimension === "odometer" || clickedDimension === "price")
+        // Reset to the default view
+        chartContainer_graph1.selectAll(".path_lines")
+          .style("stroke", d => getColor(d.year))
+          .style("opacity", 0.5);
+        lastClicked = { dimension: null, value: null };
+      }
+      else
+      {
+        const filteredData = afterCleanData_Graph1.filter(d =>
         {
+          if (clickedDimension === "odometer" || clickedDimension === "price")
+          {
+            return d[clickedDimension] < clickedValue;
+          }
+          else
+          {
+            return d[clickedDimension] === clickedValue;
+          }
+        });
+        // Update the opacity and color of the lines based on the filter
+        chartContainer_graph1.selectAll(".path_lines")
+          .style("stroke", lineData =>
+            filteredData.includes(lineData) ? "steelblue" : "lightgray"
+          )
+          .style("opacity", lineData =>
+            filteredData.includes(lineData) ? 1 : 0.1
+          );
 
-          console.log("d[clickedDimension]:", d[clickedDimension], "clickedValue:", clickedValue);
-        } else
-        {
-          return d[clickedDimension] === clickedValue;
-        }
-      });
-
-      console.log("筛选后的数据:", filteredData);
-
-      // 更新路径样式
-      chartContainer_graph1.selectAll("path.line")
-        .style("stroke", lineData =>
-          filteredData.includes(lineData) ? "steelblue" : "lightgray"
-        )
-        .style("opacity", lineData =>
-          filteredData.includes(lineData) ? 1 : 0.1
-        );
+        // Update last clicked
+        lastClicked = { dimension: clickedDimension, value: clickedValue };
+      }
     });
 }
 
