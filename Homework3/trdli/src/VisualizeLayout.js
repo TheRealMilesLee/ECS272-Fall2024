@@ -374,6 +374,38 @@ function Graph1_Overall()
     .style("font-size", 14)
     .style("text-decoration", "underline")
     .style("font-weight", "bold");
+
+  /** Add a onClick event for the dimension, user can filter the lines by click the tick on the dimension */
+  chartContainer_graph1.selectAll("g .tick text")
+    .on("click", function (event, clickedValue)
+    {
+      // Get the dimension of the clicked tick
+      const clickedDimension = d3.select(this.parentNode.parentNode).datum();
+      console.log("点击的维度:", clickedDimension, "刻度值:", clickedValue);
+
+      const filteredData = afterCleanData_Graph1.filter(d =>
+      {
+        if (clickedDimension === "odometer" || clickedDimension === "price")
+        {
+
+          console.log("d[clickedDimension]:", d[clickedDimension], "clickedValue:", clickedValue);
+        } else
+        {
+          return d[clickedDimension] === clickedValue;
+        }
+      });
+
+      console.log("筛选后的数据:", filteredData);
+
+      // 更新路径样式
+      chartContainer_graph1.selectAll("path.line")
+        .style("stroke", lineData =>
+          filteredData.includes(lineData) ? "steelblue" : "lightgray"
+        )
+        .style("opacity", lineData =>
+          filteredData.includes(lineData) ? 1 : 0.1
+        );
+    });
 }
 
 /** For this chart, we want to see how many cars were being sold for each car
