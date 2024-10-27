@@ -385,7 +385,7 @@ function Graph1_Overall()
       // Get the dimension of the clicked tick
       const clickedDimension = d3.select(this.parentNode.parentNode).datum();
 
-      // Check if the same tick was clicked again
+      // Check if the same tick was clicked again, if it is, reset to the default view
       const isSameClick = lastClicked.dimension === clickedDimension && lastClicked.value === clickedValue;
 
       if (isSameClick)
@@ -701,5 +701,26 @@ function Graph3_Detail()
     .attr("font-size", "12px")
     .attr("fill", "black")
     .style("font-weight", "bold");
+
+  // Add a onHover event for the bars, when hover on the bar, the bar will display the number of cars sold in that year
+  chartContainer_graph3.selectAll("rect")
+    .on("mouseover", function (event, d)
+    {
+      const x = xScale(d.year) + xScale.bandwidth() / 2;
+      const y = yScale(d.count) - 5;
+      chartContainer_graph3.append("text")
+        .attr("id", "tooltip")
+        .attr("x", x)
+        .attr("y", y)
+        .attr("text-anchor", "middle")
+        .attr("font-size", "12px")
+        .attr("fill", "black")
+        .text(d.count)
+        .style("font-weight", "bold");
+    })
+    .on("mouseout", function ()
+    {
+      chartContainer_graph3.select("#tooltip").remove();
+    });
 
 }
