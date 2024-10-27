@@ -1,0 +1,109 @@
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1rem;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+  background-image: url("./data/pic/Stairwell.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+body {
+  font-family: inherit;
+}
+
+.Greeting_div, .grid-container > div, .footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: inherit;
+  background: rgba(255, 255, 255, .5);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  box-shadow: 20px 15px 15px #201e29;
+  border-radius: 15px;
+}
+
+.Greeting_div {
+  flex-direction: column;
+  padding: 2rem;
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1e1e1e;
+  text-shadow: #201e29;
+}
+
+.MainBody {
+  display: flex;
+  flex-direction: column;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  gap: 10px;
+  padding: 20px;
+  border-radius: 20px;
+  height: 100%;
+}
+
+.grid-container > div {
+  font-size: 1rem;
+  border-radius: 25px;
+}
+
+.row1 {
+  grid-column: 1 / 3;
+  grid-row: 1 / 2;
+}
+
+.row2-left {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+}
+
+.row2-right {
+  grid-column: 2 / 4;
+  grid-row: 2 / 3;
+}
+
+#parallel-coordinates-container-graph1, #pie-container-graph2, #bar-container-graph3 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  height: 60vh;
+}
+
+.text-muted {
+  color: #6c757d;
+}
+
+.footer {
+  font-size: 1rem;
+  border-radius: 10px;
+}
+
+li {
+  font-weight: bold;
+  color: #1e1e1e;
+}
+
+a:link, a:visited, a:hover, a:active {
+  text-decoration: none;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.fade-in {
+  animation: fadeIn 1s ease-in-out;
+  animation-fill-mode: forwards;
+}
