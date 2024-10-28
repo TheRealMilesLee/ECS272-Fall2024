@@ -382,22 +382,23 @@ function Graph1_Overall()
   chartContainer_graph1.selectAll("g .tick text")
     .on("click", function (event, clickedValue)
     {
-      // Get the dimension of the clicked tick
       const clickedDimension = d3.select(this.parentNode.parentNode).datum();
-
-      // Check if the same tick was clicked again, if it is, reset to the default view
       const isSameClick = lastClicked.dimension === clickedDimension && lastClicked.value === clickedValue;
 
       if (isSameClick)
       {
-        // Reset to the default view
         chartContainer_graph1.selectAll(".path_lines")
           .style("stroke", d => getColor(d.year))
           .style("opacity", 0.5);
+        chartContainer_graph1.selectAll("g .tick text")
+          .style("fill", "black")
+          .style("font-weight", "normal")
+          .style("background-color", "#e6ecf5");  // reset the background color
         lastClicked = { dimension: null, value: null };
       }
       else
       {
+        // Filter the data based on the clicked dimension and value
         const filteredData = afterCleanData_Graph1.filter(d =>
         {
           if (clickedDimension === "odometer" || clickedDimension === "price")
@@ -409,16 +410,51 @@ function Graph1_Overall()
             return d[clickedDimension] === clickedValue;
           }
         });
-        // Update the opacity and color of the lines based on the filter
+
+        // reset the color and font weight of all ticks
+        chartContainer_graph1.selectAll("g .tick text")
+          .style("fill", "black")
+          .style("font-weight", "normal")
+          .style("background-color", "#e6ecf5");
+
+        // get the ticks that need to be highlighted
+        const highlightTicks = {
+          year: new Set(filteredData.map(d => d.year)),
+          make: new Set(filteredData.map(d => d.make)),
+          body: new Set(filteredData.map(d => d.body)),
+          odometer: new Set(filteredData.map(d => d.odometer)),
+          price: new Set(filteredData.map(d => d.price))
+        };
+
+        // highlight the ticks that need to be highlighted
+        chartContainer_graph1.selectAll("g .tick text")
+          .transition()  // 添加过渡
+          .duration(500) // 动画持续时间
+          .ease(d3.easeLinear)
+          .filter(function (d)
+          {
+            const dimension = d3.select(this.parentNode.parentNode).datum();
+            return highlightTicks[dimension] && highlightTicks[dimension].has(d);
+          })
+          .style("fill", "#781aeb")
+          .style("font-weight", "bold")
+          .style("font-size", 14);
+
+        // update the lines connect the data points
         chartContainer_graph1.selectAll(".path_lines")
+          .transition() // 添加过渡
+          .duration(500) // 动画持续时间
+          .style("opacity", 0) // 先淡出
+
+          .transition()
+          .duration(500)
+          .ease(d3.easeLinear)
           .style("stroke", lineData =>
-            filteredData.includes(lineData) ? "steelblue" : "lightgray"
+            filteredData.includes(lineData) ? "#781aeb" : "#404d43"
           )
           .style("opacity", lineData =>
             filteredData.includes(lineData) ? 1 : 0.1
           );
-
-        // Update last clicked
         lastClicked = { dimension: clickedDimension, value: clickedValue };
       }
     });
@@ -722,5 +758,4 @@ function Graph3_Detail()
     {
       chartContainer_graph3.select("#tooltip").remove();
     });
-
 }
