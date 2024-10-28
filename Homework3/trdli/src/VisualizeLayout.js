@@ -228,11 +228,8 @@ function graph1_data_cleaning()
     if (!uniqueEntries.has(uniqueKey) && !luxuryBrands.includes(make))
     {
       uniqueEntries.add(uniqueKey);
-      const odometer = ranges(d.odometer || 0, [5000, 10000, 15000, 20000,
-        25000, 30000,
-        35000, 40000, 45000, 50000]);
-      const price = ranges(d.price || 0, [5000, 10000, 15000, 20000, 25000,
-        30000, 35000]);
+      const odometer = ranges(d.odometer || 0, Array.from({ length: 40 }, (_, i) => (i + 1) * 5000));
+      const price = ranges(d.price || 0, Array.from({ length: 40 }, (_, i) => (i + 1) * 5000));
       if (price === 0) return null;  // Filter out entries with price 0
       return {
         year: year,
@@ -426,6 +423,7 @@ function Graph1_Overall()
           price: new Set(filteredData.map(d => d.price))
         };
 
+        console.log(highlightTicks);
         // highlight the ticks that need to be highlighted
         chartContainer_graph1.selectAll("g .tick text")
           .transition()  // 添加过渡
