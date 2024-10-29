@@ -229,8 +229,8 @@ function graph1_data_cleaning()
     {
       uniqueEntries.add(uniqueKey);
       const odometer = ranges(d.odometer || 0, Array.from({ length: 40 }, (_, i) => (i + 1) * 5000));
-      const price = ranges(d.price || 0, Array.from({ length: 40 }, (_, i) => (i + 1) * 5000));
-      if (price === 0) return null;  // Filter out entries with price 0
+      const price = ranges(d.price || 0, Array.from({ length: 9 }, (_, i) => (i + 1) * 1000));
+      if (price < 1000 || price > 30000) return null;  // Filter out entries with price 0 or less than 1000
       return {
         year: year,
         make: make,
@@ -243,7 +243,6 @@ function graph1_data_cleaning()
   }).filter(d => d !== null);  // Filter out null entries
 }
 
-const afterCleanData_Graph1 = graph1_data_cleaning();
 /**
  * @brief Draws the overall view for Graph1 (Parallel Coordinates Chart).
  * @function Graph1_Overall
@@ -255,7 +254,7 @@ function Graph1_Overall()
   const margin = { top: 20, right: 5, bottom: 35, left: 5 };
   const width = size.width - margin.left - margin.right;
   const height = size.height - margin.top - margin.bottom - 15;
-
+  const afterCleanData_Graph1 = graph1_data_cleaning();
   // Select the svg tag so that we can insert(render) elements, i.e., draw
   // the chart within it.
   const chartContainer_graph1 = d3.select("#Graph1")
@@ -372,90 +371,131 @@ function Graph1_Overall()
     .style("font-size", 14)
     .style("text-decoration", "underline")
     .style("font-weight", "bold");
+  /** Add a reset button to clear all filters */
+  const resetButton = d3.select("#parallel-coordinates-container-graph1")
+    .append("button")
+    .text("Reset Filters")
+    .style("position", "absolute")
+    .style("top", "10px")
+    .style("right", "10px")
+    .style("padding", "3px 7px")
+    .style("background-color", "#f0f0f0")
+    .style("border", "1px solid #ccc")
+    .style("border-radius", "12px")
+    .style("cursor", "pointer")
+    .on("click", function ()
+    {
+      filters = {};
+      chartContainer_graph1.selectAll(".path_lines")
+        .style("stroke", d => getColor(d.year))
+        .style("opacity", 0.5);
+      chartContainer_graph1.selectAll("g .tick text")
+        .style("fill", "black")
+        .style("font-weight", "normal")
+        .style("background-color", "#e6ecf5");  // reset the background color
+    });
 
   /** Add a onClick event for the dimension, user can filter the lines by click the tick on the dimension */
-  let lastClicked = { dimension: null, value: null };
+  let filters = {};
 
   chartContainer_graph1.selectAll("g .tick text")
     .on("click", function (event, clickedValue)
     {
       const clickedDimension = d3.select(this.parentNode.parentNode).datum();
-      const isSameClick = lastClicked.dimension === clickedDimension && lastClicked.value === clickedValue;
+      const isSameClick = filters[clickedDimension] === clickedValue;
 
       if (isSameClick)
       {
-        chartContainer_graph1.selectAll(".path_lines")
-          .style("stroke", d => getColor(d.year))
-          .style("opacity", 0.5);
-        chartContainer_graph1.selectAll("g .tick text")
-          .style("fill", "black")
-          .style("font-weight", "normal")
-          .style("background-color", "#e6ecf5");  // reset the background color
-        lastClicked = { dimension: null, value: null };
-      }
-      else
-      {
-        // Filter the data based on the clicked dimension and value
-        const filteredData = afterCleanData_Graph1.filter(d =>
+        delete filters[clickedDimension];
+        if (Object.keys(filters).length === 0)
         {
-          if (clickedDimension === "odometer" || clickedDimension === "price")
+          chartContainer_graph1.selectAll(".path_lines")
+            .style("stroke", d => getColor(d.year))
+            .style("opacity", 0.5);
+          chartContainer_graph1.selectAll("g .tick text")
+            .style("fill", "black")
+            .style("font-weight", "normal")
+            .style("background-color", "#e6ecf5");  // reset the background color
+        }
+      } else
+      {
+        filters[clickedDimension] = clickedValue;
+      }
+
+      // Filter the data based on the selected filters
+      const filteredData = afterCleanData_Graph1.filter(d =>
+      {
+        return Object.keys(filters).every(key =>
+        {
+          if (key === "odometer" || key === "price")
           {
-            return d[clickedDimension] < clickedValue;
-          }
-          else
+            return d[key] < filters[key];
+          } else
           {
-            return d[clickedDimension] === clickedValue;
+            return d[key] === filters[key];
           }
         });
+      });
 
-        // reset the color and font weight of all ticks
-        chartContainer_graph1.selectAll("g .tick text")
-          .style("fill", "black")
-          .style("font-weight", "normal")
-          .style("background-color", "#e6ecf5");
+      // reset the color and font weight of all ticks
+      chartContainer_graph1.selectAll("g .tick text")
+        .style("fill", "black")
+        .style("font-weight", "normal")
+        .style("background-color", "#e6ecf5");
 
-        // get the ticks that need to be highlighted
-        const highlightTicks = {
-          year: new Set(filteredData.map(d => d.year)),
-          make: new Set(filteredData.map(d => d.make)),
-          body: new Set(filteredData.map(d => d.body)),
-          odometer: new Set(filteredData.map(d => d.odometer)),
-          price: new Set(filteredData.map(d => d.price))
-        };
+      // get the ticks that need to be highlighted
+      const highlightTicks = {
+        year: new Set(filteredData.map(d => d.year)),
+        make: new Set(filteredData.map(d => d.make)),
+        body: new Set(filteredData.map(d => d.body)),
+        odometer: new Set(filteredData.map(d => d.odometer)),
+        price: new Set(filteredData.map(d => d.price))
+      };
 
-        console.log(highlightTicks);
-        // highlight the ticks that need to be highlighted
-        chartContainer_graph1.selectAll("g .tick text")
-          .transition()  // 添加过渡
-          .duration(500) // 动画持续时间
-          .ease(d3.easeLinear)
-          .filter(function (d)
-          {
-            const dimension = d3.select(this.parentNode.parentNode).datum();
-            return highlightTicks[dimension] && highlightTicks[dimension].has(d);
-          })
-          .style("fill", "#781aeb")
-          .style("font-weight", "bold")
-          .style("font-size", 14);
+      // highlight the ticks that need to be highlighted
+      chartContainer_graph1.selectAll("g .tick text")
+        .transition()
+        .duration(500)
+        .ease(d3.easeLinear)
+        .filter(function (d)
+        {
+          const dimension = d3.select(this.parentNode.parentNode).datum();
+          return highlightTicks[dimension] && highlightTicks[dimension].has(d);
+        })
+        .style("fill", "#781aeb")
+        .style("font-weight", "bold")
+        .style("font-size", 14);
 
-        // update the lines connect the data points
-        chartContainer_graph1.selectAll(".path_lines")
-          .transition() // 添加过渡
-          .duration(500) // 动画持续时间
-          .style("opacity", 0) // 先淡出
-
-          .transition()
-          .duration(500)
-          .ease(d3.easeLinear)
-          .style("stroke", lineData =>
-            filteredData.includes(lineData) ? "#0384fc" : "#404d43"
-          )
-          .style("opacity", lineData =>
-            filteredData.includes(lineData) ? 1 : 0.1
-          );
-        lastClicked = { dimension: clickedDimension, value: clickedValue };
-      }
+      // update the lines connect the data points
+      chartContainer_graph1.selectAll(".path_lines")
+        .transition()
+        .duration(500)
+        .style("opacity", 0)
+        .transition()
+        .duration(500)
+        .ease(d3.easeLinear)
+        .style("stroke", lineData =>
+          filteredData.includes(lineData) ? "#0384fc" : "#404d43"
+        )
+        .style("opacity", lineData =>
+          filteredData.includes(lineData) ? 1 : 0.1
+        );
     });
+
+  chartContainer_graph1.on("click", function (event)
+  {
+    if (!event.target.closest(".tick"))
+    {
+      filters = {};
+      chartContainer_graph1.selectAll(".path_lines")
+        .style("stroke", d => getColor(d.year))
+        .style("opacity", 0.5);
+      chartContainer_graph1.selectAll("g .tick text")
+        .style("fill", "black")
+        .style("font-weight", "normal")
+        .style("background-color", "#e6ecf5");  // reset the background color
+    }
+  });
 }
 
 /** For this chart, we want to see how many cars were being sold for each car
@@ -646,8 +686,7 @@ function Graph2_Detail()
   {
     return d.startAngle + (d.endAngle - d.startAngle) / 2;
   }
-
-}
+};
 
 
 
