@@ -762,7 +762,10 @@ function Graph3_Detail()
     .attr("y", d => yScale(d.count))
     .attr("width", xScale.bandwidth())
     .attr("height", d => height - yScale(d.count))
-    .attr("fill", d => getColor(d.count));
+    .attr("fill", d => getColor(d.count))
+    .transition()
+    .duration(500)
+    .delay((d, i) => i * 50); // Adding variable delay for the transition
 
   // Add the X axis label
   chartContainer_graph3.append("text")
@@ -801,9 +804,21 @@ function Graph3_Detail()
         .attr("fill", "black")
         .text(d.count)
         .style("font-weight", "bold");
+
+      // Add dashed horizontal line
+      chartContainer_graph3.append("line")
+        .attr("id", "dashed-line")
+        .attr("x1", 0)
+        .attr("y1", y)
+        .attr("x2", x)
+        .attr("y2", y)
+        .attr("stroke", "black")
+        .attr("stroke-width", 1)
+        .attr("stroke-dasharray", "4 4");
     })
     .on("mouseout", function ()
     {
       chartContainer_graph3.select("#tooltip").remove();
+      chartContainer_graph3.select("#dashed-line").remove();
     });
 }
