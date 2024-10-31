@@ -62,7 +62,7 @@ export function Graph2_Detail()
   // Set up the margin for the chart
   const margin = { top: 10, right: 10, bottom: 10, left: 10 };
   const width = size.width - margin.left - margin.right;
-  const height = size.height - margin.top - margin.bottom - 10;
+  const height = size.height - margin.top - margin.bottom;
 
   // Set up the SVG container
   const chartContainer_graph2 = d3.select("#Graph2")
@@ -80,7 +80,7 @@ export function Graph2_Detail()
   /** Data cleaning finished, now we can start to draw the pie chart */
 
   // Config the size of the pie
-  const radius = (Math.min(width, height) / 3.1415926) + 50;
+  const radius = (Math.min(width, height) / 3.1415926) + 25;
 
   // Set up the color scale based on the car maker
   const color = d3.scaleOrdinal()
@@ -93,8 +93,8 @@ export function Graph2_Detail()
   // Create the arc generator, innerRadius is 5, outerRadius is radius
   const arc = d3.arc().innerRadius(5).outerRadius(radius);
 
-  // Create the arc generator for hover effect, it with expand the arc by 1.15
-  const arcHover = d3.arc().innerRadius(5).outerRadius(radius * 1.15);
+  // Create the arc generator for hover effect, it with expand the arc by 1.1
+  const arcHover = d3.arc().innerRadius(5).outerRadius(radius * 1.1);
 
   // Bind data and create pie chart slices
   const arcs = chartContainer_graph2.selectAll(".arc")

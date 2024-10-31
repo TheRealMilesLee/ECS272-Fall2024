@@ -57,7 +57,7 @@ export const Graph1_OverallView = () => (
   `<div id='parallel-coordinates-container-graph1'>
         <svg id='Graph1'></svg>
         <p>
-          <b> Graph 1. </b> Overview of car sales trends from 1986 to 2015.
+          <b> Graph 1. </b> Overall View of used car sold situation.
         </p>
     </div>`
 );

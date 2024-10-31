@@ -1,45 +1,10 @@
 import * as d3 from 'd3';
-import { size } from "./VisualizeLayout.js";
+import { size } from './VisualizeLayout.js';
 import { column_from_csv } from './csvReadIn.js';
+import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 
-/**
- * @brief Cleans and categorizes data for graph1 visualization.
- *
- * This function processes the input data by categorizing years, makes, and
- * body types, and filtering out luxury brands and entries with a price of 0.
- * It also converts odometer and price values into specified numeric ranges.
- *
- * @function graph1_data_cleaning
- * @returns {Array<Object>} An array of cleaned and categorized data objects.
- *
- * @example
- * const cleanedData = graph1_data_cleaning();
- * console.log(cleanedData);
- */
 function graph1_data_cleaning()
 {
-  const ranges = (value, steps) =>
-  {
-    for (let currentStepIndex = 0; currentStepIndex < steps.length;
-      currentStepIndex++)
-    {
-      if (value < steps[currentStepIndex])
-      {
-        if (currentStepIndex === 0)
-        {
-          return 0;
-        }
-        else
-        {
-          const previousStep = steps[currentStepIndex - 1];
-          const currentStep = steps[currentStepIndex];
-          return (previousStep + currentStep) / 2;  // Use midpoint
-        }
-      }
-    }
-    return steps[steps.length - 1] + 5000;  // Handle values greater than the
-    // last step
-  };
   const yearRanges = [
     { start: 1980, end: 1985, label: '1980-1985' },
     { start: 1986, end: 1990, label: '1986-1990' },
@@ -47,7 +12,9 @@ function graph1_data_cleaning()
     { start: 1996, end: 2000, label: '1996-2000' },
     { start: 2001, end: 2005, label: '2001-2005' },
     { start: 2006, end: 2010, label: '2006-2010' },
-    { start: 2011, end: 2015, label: '2011-2015' }
+    { start: 2011, end: 2015, label: '2011-2015' },
+    { start: 2016, end: 2020, label: '2016-2020' },
+    { start: 2021, end: 2025, label: '2021-2025' }
   ];
 
   const categorizeYear = (year) =>
@@ -62,313 +29,281 @@ function graph1_data_cleaning()
     return 'Unknown';
   };
 
-  const categorizeBody = (body) =>
+  // Make categories
+  function getMakeCategory(make)
   {
-    const bodyLower = body.toLowerCase();
-    const categories = ['coupe', 'sedan', 'suv', 'minivan', 'truck', 'van',
-      'wagon', 'hatchback', 'convertible', 'roadster', 'cab'];
-    if (bodyLower.includes('koup'))
-    {
-      return 'coupe';
-    }
-    if (bodyLower.includes('navitgation'))
-    {
-      return 'suv'; // Exclude entries with 'navigation'
-    }
-    if (bodyLower.includes('supercrew'))
-    {
-      return 'truck';
-    }
-    return categories.find(category => bodyLower.includes(category)) ||
-      bodyLower;
+    const JapaneseMakes = ['toyota', 'isuzu', 'honda', 'nissan', 'subaru', 'mazda', 'iszuzu', 'mitsubishi', 'suzuki', 'daihatsu', 'lexus', 'infiniti', 'acura', 'scion'];
+    const EuropeanMakes = ['volkswagen', 'geo', 'rolls-royce', 'fisker', 'audi', 'bmw', 'mercedes-benz', 'porsche', 'volvo', 'saab', 'fiat', 'alfa', 'jaguar', 'land rover', 'mini', 'smart', 'bentley', 'rolls royce', 'aston martin', 'lotus', 'maserati', 'lamborghini', 'ferrari'];
+    const AmericanMakes = ['ford', 'ram', 'chevrolet', 'dodge', 'jeep', 'chrysler', 'cadillac', 'lincoln', 'buick', 'gmc', 'plymouth', 'saturn', 'pontiac', 'oldsmobile', 'mercury', 'hummer', 'tesla'];
+    const KoreanMakes = ['hyundai', 'kia', 'genesis', 'daewoo', 'ssangyong'];
+
+    if (JapaneseMakes.includes(make)) return 'Japanese';
+    if (EuropeanMakes.includes(make)) return 'European';
+    if (AmericanMakes.includes(make)) return 'American';
+    if (KoreanMakes.includes(make)) return 'Korean';
+    return 'Other';
+  }
+  const categoriesMake = (make) =>
+  {
+    if (!make) return 'Unknown';
+    return getMakeCategory(make.toLowerCase());
   };
 
-  // Use a Set to track unique combinations of year, make, model, and body
-  const uniqueEntries = new Set();
+  // Body categories
+  const categorizeBody = (body) =>
+  {
+    if (!body) return 'Unknown';
+    const bodyLower = body.toLowerCase();
+    const categories = ['coupe', 'sedan', 'suv', 'minivan', 'truck', 'van', 'wagon', 'hatchback', 'convertible', 'roadster', 'cab'];
 
+    if (bodyLower.includes('koup')) return 'coupe';
+    if (bodyLower.includes('navitgation')) return 'suv';
+    if (bodyLower.includes('supercrew')) return 'truck';
+
+    return categories.find(category => bodyLower.includes(category)) || 'Other';
+  };
+
+  // Odometer categories
+  const odometerRanges = [
+    { start: 0, end: 1000, label: '0-1000' },
+    { start: 1001, end: 5000, label: '1001-5000' },
+    { start: 5001, end: 10000, label: '5001-10000' },
+    { start: 10001, end: 50000, label: '10001-50000' },
+    { start: 50001, end: 100000, label: '50001-100000' },
+    { start: 100001, end: 150000, label: '100001-150000' },
+    { start: 150001, end: 200000, label: '150001-200000' },
+    { start: 200001, end: 250000, label: '200001-250000' },
+    { start: 250001, end: 300000, label: '250001-300000' },
+    { start: 300001, end: 350000, label: '300001-350000' }
+  ];
+  const categoriesOdometer = (odometer) =>
+  {
+    if (!odometer) return 'Unknown';
+    // Make odometer into the ranges
+    const odometerNum = parseInt(odometer);
+    if (isNaN(odometerNum))
+    {
+      return 'Unknown';
+    }
+    else
+    {
+      for (const range of odometerRanges)
+      {
+        if (odometerNum >= range.start && odometerNum <= range.end)
+        {
+          return range.label;
+        }
+        else if (odometerNum > 350000)
+        {
+          return '350001-above';
+        }
+      }
+    }
+  };
+
+  // Price categories
+  const priceRanges = [
+    { start: 0, end: 1000, label: '0-1000' },
+    { start: 1001, end: 5000, label: '1001-5000' },
+    { start: 5001, end: 10000, label: '5001-10000' },
+    { start: 10001, end: 20000, label: '10001-20000' },
+    { start: 20001, end: 30000, label: '20001-30000' },
+    { start: 30001, end: 40000, label: '30001-40000' },
+    { start: 40001, end: 50000, label: '40001-50000' },
+  ];
+  const categoriesPrice = (price) =>
+  {
+    if (!price) return 'Unknown';
+    const priceNum = parseInt(price);
+    if (isNaN(priceNum))
+    {
+      return 'Unknown';
+    }
+    else
+    {
+      for (const range of priceRanges)
+      {
+        if (priceNum >= range.start && priceNum <= range.end)
+        {
+          return range.label;
+        }
+        else if (priceNum > 50000)
+        {
+          return '50001-above';
+        }
+      }
+    }
+  };
+
+  const uniqueEntries = new Set();
   return column_from_csv.map(d =>
   {
     const year = categorizeYear(d.year);
-    const make = d.make.toLowerCase();
+    const make = categoriesMake(d.make);
     const body = categorizeBody(d.body);
+    const odometer = categoriesOdometer(d.odometer);
+    const price = categoriesPrice(d.price);
     const uniqueKey = `${ year }-${ make }-${ body }`;
-    const luxuryBrands = ['ferrari', 'rolls-royce', 'fisker', 'tesla',
-      'lamborghini', 'bentley', 'porsche', 'bmw', 'mercedes-benz', 'jaguar',
-      'land rover', 'maserati', 'alfa romeo', 'fiat', 'smart', 'hummer',
-      'lotus', 'aston martin'];
-    if (!uniqueEntries.has(uniqueKey) && !luxuryBrands.includes(make))
+    if (!uniqueEntries.has(uniqueKey))
     {
       uniqueEntries.add(uniqueKey);
-      const odometer = ranges(d.odometer || 0, Array.from({ length: 40 }, (_, i) => (i + 1) * 5000));
-      const price = ranges(d.price || 0, Array.from({ length: 9 }, (_, i) => (i + 1) * 1000));
-      if (price < 1000 || price > 30000) return null;  // Filter out entries with price 0 or less than 1000
       return {
         year: year,
         make: make,
         body: body,
-        odometer: odometer,  // Use numeric ranges
-        price: price  // Use numeric ranges
+        odometer: odometer,
+        price: price
       };
     }
     return null;
   }).filter(d => d !== null);  // Filter out null entries
 }
 
-/**
- * @brief Draws the overall view for Graph1 (Parallel Coordinates Chart).
- * @function Graph1_Overall
- * @returns {void}
- */
 export function Graph1_Overall()
 {
-  // Set up the margins for the chart
-  const margin = { top: 20, right: 5, bottom: 35, left: 5 };
+  const margin = { top: 20, right: 10, bottom: 30, left: 10 };
   const width = size.width - margin.left - margin.right;
-  const height = size.height - margin.top - margin.bottom - 15;
+  const height = 350 - margin.top - margin.bottom;
   const afterCleanData_Graph1 = graph1_data_cleaning();
-  // Select the svg tag so that we can insert(render) elements, i.e., draw
-  // the chart within it.
-  const chartContainer_graph1 = d3.select("#Graph1")
-    .attr("width", "100%")
-    .attr("height", "100%")
-    .attr("transform", `translate(${ margin.left },${ margin.top })`)
-    .append("g")
-    .attr("preserveAspectRatio", "xMidYMid meet");
-  // Defined the categories for the parallel coordinates
-  const dimensions = ['year', 'make', 'body', 'odometer', 'price'];
+  d3.sort(afterCleanData_Graph1, d => d.year);
 
-  // Defined the color that the line will be colored based on the make
-  const colorScale = d3.scaleOrdinal()
-    .domain(['1980-1985', '1986-1990', '1991-1995', '1996-2000', '2001-2005',
-      '2006-2010', '2011-2015'])
-    .range(['#FF3366', '#4834E0', '#00A676 ', '#F7B500', '#8B1E3F',
-      '#3B1EC0', '#E45826']);
-
-  function getColor(year)
+  if (afterCleanData_Graph1.length === 0)
   {
-    return colorScale(year) || '#000000'; // default to black for unknown
-  }
-  const yScales = {};
-  // Now we need to define the scales for each dimension. Linear scale for
-  // numeric data
-  ['odometer', 'price'].forEach(dimensions =>
-  {
-    const numeric_value = d3.extent(afterCleanData_Graph1,
-      d => d[dimensions]);
-    yScales[dimensions] = d3.scaleLinear()
-      .domain(numeric_value)  // Ensure the domain is based on valid data
-      .range([height - margin.bottom, margin.top]);
-  });
-  // 'make', 'body' are categorical, so we use ordinal scales
-  ['year', 'make', 'body'].forEach(dimensions =>
-  {
-    yScales[dimensions] = d3.scalePoint()
-      .domain(afterCleanData_Graph1.map(d => d[dimensions]).filter(Boolean))
-      .range([height - margin.bottom, margin.top])
-      .padding(0.1);
-  });
-
-  // Create the X axis, that's the distance between the vertical lines, the
-  // data will connect between the lines
-  const xScale = d3.scalePoint()
-    .range([margin.left, width - margin.right])
-    .domain(dimensions)
-    .padding(0.2);
-  /**
-   * @brief The function `path` checks if all dimensions of a data point are
-   * valid and returns the path if they are.
-   * @param d - The `d` parameter in the `path` function represents a data
-   * point that contains values for different dimensions. The function checks
-   * if the data point is valid for all dimensions before returning a path
-   * based on the data values.
-   * @returns The function `path(d)` will return a path if all dimensions are
-   * valid, otherwise it will return `null`. The path is generated using D3's
-   * line generator and is based on the data point `d` provided as input.
-   */
-  function path(d)
-  {
-    // Check if any dimension returns NaN for this data point
-    const valid = dimensions.every(p =>
-    {
-      const scaledValue = yScales[p](d[p]);
-      return !isNaN(scaledValue);
-    });
-    // Only return path if all dimensions are valid
-    return valid ? d3.line()(dimensions.map(p => [xScale(p), yScales[p]
-      (d[p])])) : null;
+    console.error('No data available for visualization');
+    return;
   }
 
-  // Show the lines.
-  chartContainer_graph1.selectAll("path_connect_lines")
-    .data(afterCleanData_Graph1)
-    .enter().append("path")
-    .attr("class", "path_lines")
-    .attr("d", path)
-    .style("fill", "none")
-    .style("stroke", d => getColor(d.year))
-    .style("opacity", 0.5)
-    .style("stroke-width", 1.5);
-  // Draw the lines for that vertical axis (Parallel Lines, each dimension a
-  // line)
-  chartContainer_graph1.selectAll("allAxies")
-    .data(dimensions).enter()
-    .append("g")
-    .attr("transform", d => `translate(${ xScale(d) },0)`)
-    .each(function (d)
+  // Initialize nodes and links and prepare the categories for the sankey diagram
+  const nodes = [];
+  const links = [];
+  const categories = ['year', 'make', 'body', 'odometer', 'price'];
+  const nodeMap = new Map();
+
+  // Create nodes for each category
+  categories.forEach(category =>
+  {
+    const uniqueValues = new Set(afterCleanData_Graph1.map(d => d[category]));
+    uniqueValues.forEach(value =>
     {
-      d3.select(this).call(d3.axisLeft().scale(yScales[d]));
-    })
-    .attr("padding", 1)
-    .style("font-size", 12)
-    .style("font-weight", "bold")
-    .call(g => g.selectAll("text")
-      .clone(true).lower()
-      .attr("fill", "none")
-      .attr("stroke-width", 3)
-      .attr("stroke-linejoin", "round")
-      .attr("stroke", "#e6ecf5")  // Changed to white for brighter appearance
-      .attr("stroke-opacity", 0.5));
-
-  // Make lables for each vertical line (i.e. year, make, model, body,
-  // odometer, price)
-  chartContainer_graph1.selectAll("dimension_labels")
-    .data(dimensions).enter()
-    .append("text")
-    .text(d => d)
-    .attr("text-anchor", "middle")
-    .attr("x", d => xScale(d))
-    .attr("y", height)
-    .style("fill", "black")
-    .style("font-size", 14)
-    .style("text-decoration", "underline")
-    .style("font-weight", "bold");
-  /** Add a reset button to clear all filters */
-  const resetButton = d3.select("#parallel-coordinates-container-graph1")
-    .append("button")
-    .text("Reset Filters")
-    .style("position", "absolute")
-    .style("top", "10px")
-    .style("right", "10px")
-    .style("padding", "3px 7px")
-    .style("background-color", "#f0f0f0")
-    .style("border", "1px solid #ccc")
-    .style("border-radius", "12px")
-    .style("cursor", "pointer")
-    .on("click", function ()
-    {
-      filters = {};
-      chartContainer_graph1.selectAll(".path_lines")
-        .style("stroke", d => getColor(d.year))
-        .style("opacity", 0.5);
-      chartContainer_graph1.selectAll("g .tick text")
-        .style("fill", "black")
-        .style("font-weight", "normal")
-        .style("background-color", "#e6ecf5");  // reset the background color
-    });
-
-  /** Add a onClick event for the dimension, user can filter the lines by click the tick on the dimension */
-  let filters = {};
-
-  chartContainer_graph1.selectAll("g .tick text")
-    .on("click", function (event, clickedValue)
-    {
-      const clickedDimension = d3.select(this.parentNode.parentNode).datum();
-      const isSameClick = filters[clickedDimension] === clickedValue;
-
-      if (isSameClick)
+      const nodeName = `${ category }-${ value }`;
+      if (!nodeMap.has(nodeName))
       {
-        delete filters[clickedDimension];
-        if (Object.keys(filters).length === 0)
-        {
-          chartContainer_graph1.selectAll(".path_lines")
-            .style("stroke", d => getColor(d.year))
-            .style("opacity", 0.5)
-            .style("stroke-width", 1.5); // Reset stroke width
-          chartContainer_graph1.selectAll("g .tick text")
-            .style("fill", "black")
-            .style("font-weight", "normal")
-            .style("background-color", "#e6ecf5");  // reset the background color
-        }
-      } else
-      {
-        filters[clickedDimension] = clickedValue;
+        nodeMap.set(nodeName, nodes.length);
+        nodes.push({ name: nodeName });
       }
-
-      // Filter the data based on the selected filters
-      const filteredData = afterCleanData_Graph1.filter(d =>
-      {
-        return Object.keys(filters).every(key =>
-        {
-          if (key === "odometer" || key === "price")
-          {
-            return d[key] < filters[key];
-          } else
-          {
-            return d[key] === filters[key];
-          }
-        });
-      });
-
-      // reset the color and font weight of all ticks
-      chartContainer_graph1.selectAll("g .tick text")
-        .style("fill", "black")
-        .style("font-weight", "normal")
-        .style("background-color", "#e6ecf5");
-
-      // get the ticks that need to be highlighted
-      const highlightTicks = {
-        year: new Set(filteredData.map(d => d.year)),
-        make: new Set(filteredData.map(d => d.make)),
-        body: new Set(filteredData.map(d => d.body)),
-        odometer: new Set(filteredData.map(d => d.odometer)),
-        price: new Set(filteredData.map(d => d.price))
-      };
-
-      // highlight the ticks that need to be highlighted
-      chartContainer_graph1.selectAll("g .tick text")
-        .transition()
-        .duration(500)
-        .ease(d3.easeLinear)
-        .filter(function (d)
-        {
-          const dimension = d3.select(this.parentNode.parentNode).datum();
-          return highlightTicks[dimension] && highlightTicks[dimension].has(d);
-        })
-        .style("fill", "#781aeb")
-        .style("font-weight", "bold")
-        .style("font-size", 14);
-
-      // update the lines connect the data points
-      chartContainer_graph1.selectAll(".path_lines")
-        .transition()
-        .duration(500)
-        .style("opacity", 0)
-        .transition()
-        .duration(500)
-        .ease(d3.easeLinear)
-        .style("stroke", lineData =>
-          filteredData.includes(lineData) ? "#0384fc" : "#404d43"
-        )
-        .style("opacity", lineData =>
-          filteredData.includes(lineData) ? 1 : 0.1
-        )
-        .style("stroke-width", lineData =>
-          filteredData.includes(lineData) ? 3 : 1.5 // Make filtered lines thicker
-        );
     });
+  });
 
-  chartContainer_graph1.on("click", function (event)
+
+  // Create links between nodes
+  afterCleanData_Graph1.forEach(d =>
   {
-    if (!event.target.closest(".tick"))
+    for (let i = 0; i < categories.length - 1; i++)
     {
-      filters = {};
-      chartContainer_graph1.selectAll(".path_lines")
-        .style("stroke", d => getColor(d.year))
-        .style("opacity", 0.5);
-      chartContainer_graph1.selectAll("g .tick text")
-        .style("fill", "black")
-        .style("font-weight", "normal")
-        .style("background-color", "#e6ecf5");  // reset the background color
+      const sourceName = `${ categories[i] }-${ d[categories[i]] }`;
+      const targetName = `${ categories[i + 1] }-${ d[categories[i + 1]] }`;
+
+      const sourceIndex = nodeMap.get(sourceName);
+      const targetIndex = nodeMap.get(targetName);
+
+      if (sourceIndex !== undefined && targetIndex !== undefined)
+      {
+        links.push({
+          source: sourceIndex,
+          target: targetIndex,
+          value: 1
+        });
+      }
     }
   });
+
+
+  // Create sankey diagram
+  const sankeyDiagram = sankey()
+    .nodeWidth(15)
+    .nodePadding(10)
+    .extent([[1, 1], [width - 1, height - 5]])
+    .nodeSort((a, b) =>
+    {
+      // 按列进行条件排序
+      if (a.layer === 1 || a.layer === 4 || a.layer === 5)
+      {
+        return d3.ascending(a.value, b.value); // 第1, 4, 5竖列按数字升序排序
+      }
+      return null; // 其他列保留默认顺序
+    });
+
+  // Create sankey data
+  const sankeyData = sankeyDiagram({
+    nodes: nodes.map(d => Object.assign({}, d)),
+    links: links.map(d => Object.assign({}, d))
+  });
+
+  // Create SVG
+  const svg = d3.select("#Graph1")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+    .attr("transform", `translate(${ margin.left },${ margin.top })`);
+
+  // create color for each category based on year, make, body, odometer, price
+  const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+  // connect links
+  svg.append("g")
+    .attr("fill", "none")
+    .selectAll("path")
+    .data(sankeyData.links)
+    .enter()
+    .append("path")
+    .attr("d", sankeyLinkHorizontal())
+    .attr("stroke", d => color(d.source.name.split('-')[0]))  // Apply color based on category
+    .attr("stroke-width", d => Math.max(1, d.width))
+    .style("opacity", 0.6);
+
+  // add nodes
+  const nodeGroup = svg.append("g");
+
+  // add node rectangles
+  const nodeRects = nodeGroup.selectAll("rect")
+    .data(sankeyData.nodes)
+    .enter()
+    .append("rect")
+    .attr("x", d => d.x0)
+    .attr("y", d => d.y0)
+    .attr("height", d => d.y1 - d.y0)
+    .attr("width", d => d.x1 - d.x0)
+    .attr("fill", d => d3.scaleOrdinal(d3.schemeCategory10)(d.name))
+    .attr("stroke", "#000");
+
+  // Add node labels
+  nodeGroup.append("g")
+    .style("font", "12px sans-serif")
+    .selectAll("text")
+    .data(sankeyData.nodes)
+    .enter()
+    .append("text")
+    .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+    .attr("y", d => (d.y1 + d.y0) / 2)
+    .attr("dy", "0.35em")
+    .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+    .text(d =>
+    {
+      if (d.name.split('-')[2] !== undefined)
+      {
+        return d.name.split('-')[1] + '-' + d.name.split('-')[2];
+      }
+      else
+      {
+        return d.name.split('-')[1];
+      }
+    })
+    .attr("stroke", "#000");
+
+  // Add legend
+  nodeGroup.selectAll("rect")
+    .append("title")
+    .text(d => d.name.split('-')[1])
+    .attr("fill", d => d3.scaleOrdinal(d3.schemeCategory10)(d.name.split('-')[0]))
+    .attr("stroke", "#000");
 }
