@@ -1,169 +1,13 @@
 import * as d3 from 'd3';
 import { size } from './VisualizeLayout.js';
-import { column_from_csv } from './csvReadIn.js';
+import { graph1_data_cleaning } from './graphDataCleaning.js';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
-
-function graph1_data_cleaning()
-{
-  const yearRanges = [
-    { start: 1980, end: 1985, label: '1980-1985' },
-    { start: 1986, end: 1990, label: '1986-1990' },
-    { start: 1991, end: 1995, label: '1991-1995' },
-    { start: 1996, end: 2000, label: '1996-2000' },
-    { start: 2001, end: 2005, label: '2001-2005' },
-    { start: 2006, end: 2010, label: '2006-2010' },
-    { start: 2011, end: 2015, label: '2011-2015' },
-    { start: 2016, end: 2020, label: '2016-2020' },
-    { start: 2021, end: 2025, label: '2021-2025' }
-  ];
-
-  const categorizeYear = (year) =>
-  {
-    for (const range of yearRanges)
-    {
-      if (year >= range.start && year <= range.end)
-      {
-        return range.label;
-      }
-    }
-    return 'Unknown';
-  };
-
-  // Make categories
-  function getMakeCategory(make)
-  {
-    const JapaneseMakes = ['toyota', 'isuzu', 'honda', 'nissan', 'subaru', 'mazda', 'iszuzu', 'mitsubishi', 'suzuki', 'daihatsu', 'lexus', 'infiniti', 'acura', 'scion'];
-    const EuropeanMakes = ['volkswagen', 'geo', 'rolls-royce', 'fisker', 'audi', 'bmw', 'mercedes-benz', 'porsche', 'volvo', 'saab', 'fiat', 'alfa', 'jaguar', 'land rover', 'mini', 'smart', 'bentley', 'rolls royce', 'aston martin', 'lotus', 'maserati', 'lamborghini', 'ferrari'];
-    const AmericanMakes = ['ford', 'ram', 'chevrolet', 'dodge', 'jeep', 'chrysler', 'cadillac', 'lincoln', 'buick', 'gmc', 'plymouth', 'saturn', 'pontiac', 'oldsmobile', 'mercury', 'hummer', 'tesla'];
-    const KoreanMakes = ['hyundai', 'kia', 'genesis', 'daewoo', 'ssangyong'];
-
-    if (JapaneseMakes.includes(make)) return 'Japanese';
-    if (EuropeanMakes.includes(make)) return 'European';
-    if (AmericanMakes.includes(make)) return 'American';
-    if (KoreanMakes.includes(make)) return 'Korean';
-    return 'Other';
-  }
-  const categoriesMake = (make) =>
-  {
-    if (!make) return 'Unknown';
-    return getMakeCategory(make.toLowerCase());
-  };
-
-  // Body categories
-  const categorizeBody = (body) =>
-  {
-    if (!body) return 'Unknown';
-    const bodyLower = body.toLowerCase();
-    const categories = ['coupe', 'sedan', 'suv', 'minivan', 'truck', 'van', 'wagon', 'hatchback', 'convertible', 'roadster', 'cab'];
-
-    if (bodyLower.includes('koup')) return 'coupe';
-    if (bodyLower.includes('navitgation')) return 'suv';
-    if (bodyLower.includes('supercrew')) return 'truck';
-
-    return categories.find(category => bodyLower.includes(category)) || 'Other';
-  };
-
-  // Odometer categories
-  const odometerRanges = [
-    { start: 0, end: 1000, label: '0-1000' },
-    { start: 1001, end: 5000, label: '1001-5000' },
-    { start: 5001, end: 10000, label: '5001-10000' },
-    { start: 10001, end: 50000, label: '10001-50000' },
-    { start: 50001, end: 100000, label: '50001-100000' },
-    { start: 100001, end: 150000, label: '100001-150000' },
-    { start: 150001, end: 200000, label: '150001-200000' },
-    { start: 200001, end: 250000, label: '200001-250000' },
-    { start: 250001, end: 300000, label: '250001-300000' },
-    { start: 300001, end: 350000, label: '300001-350000' }
-  ];
-  const categoriesOdometer = (odometer) =>
-  {
-    if (!odometer) return 'Unknown';
-    // Make odometer into the ranges
-    const odometerNum = parseInt(odometer);
-    if (isNaN(odometerNum))
-    {
-      return 'Unknown';
-    }
-    else
-    {
-      for (const range of odometerRanges)
-      {
-        if (odometerNum >= range.start && odometerNum <= range.end)
-        {
-          return range.label;
-        }
-        else if (odometerNum > 350000)
-        {
-          return '350001-above';
-        }
-      }
-    }
-  };
-
-  // Price categories
-  const priceRanges = [
-    { start: 0, end: 1000, label: '0-1000' },
-    { start: 1001, end: 5000, label: '1001-5000' },
-    { start: 5001, end: 10000, label: '5001-10000' },
-    { start: 10001, end: 20000, label: '10001-20000' },
-    { start: 20001, end: 30000, label: '20001-30000' },
-    { start: 30001, end: 40000, label: '30001-40000' },
-    { start: 40001, end: 50000, label: '40001-50000' },
-  ];
-  const categoriesPrice = (price) =>
-  {
-    if (!price) return 'Unknown';
-    const priceNum = parseInt(price);
-    if (isNaN(priceNum))
-    {
-      return 'Unknown';
-    }
-    else
-    {
-      for (const range of priceRanges)
-      {
-        if (priceNum >= range.start && priceNum <= range.end)
-        {
-          return range.label;
-        }
-        else if (priceNum > 50000)
-        {
-          return '50001-above';
-        }
-      }
-    }
-  };
-
-  const uniqueEntries = new Set();
-  return column_from_csv.map(d =>
-  {
-    const year = categorizeYear(d.year);
-    const make = categoriesMake(d.make);
-    const body = categorizeBody(d.body);
-    const odometer = categoriesOdometer(d.odometer);
-    const price = categoriesPrice(d.price);
-    const uniqueKey = `${ year }-${ make }-${ body }`;
-    if (!uniqueEntries.has(uniqueKey))
-    {
-      uniqueEntries.add(uniqueKey);
-      return {
-        year: year,
-        make: make,
-        body: body,
-        odometer: odometer,
-        price: price
-      };
-    }
-    return null;
-  }).filter(d => d !== null);  // Filter out null entries
-}
 
 export function Graph1_Overall()
 {
   const margin = { top: 20, right: 10, bottom: 30, left: 10 };
   const width = size.width - margin.left - margin.right;
-  const height = 350 - margin.top - margin.bottom;
+  const height = 250 - margin.top - margin.bottom;
   const afterCleanData_Graph1 = graph1_data_cleaning();
   d3.sort(afterCleanData_Graph1, d => d.year);
 
@@ -245,11 +89,23 @@ export function Graph1_Overall()
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
     .attr("transform", `translate(${ margin.left },${ margin.top })`);
+  // Define color scales for each category with higher contrast
+  const colorScales = {
+    year: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('year-')), d => d.value)]).range(["#2d85c4", "#ae1aed"]),
+    make: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('make-')), d => d.value)]).range(["#ae1aed", "#1ae843"]),
+    body: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('body-')), d => d.value)]).range(["#1ae843", "#e38b19"]),
+    odometer: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('odometer-')), d => d.value)]).range(["#e38b19", "#e64915"]),
+    price: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('price-')), d => d.value)]).range(["#e64915", "#75250b"])
+  };
 
-  // create color for each category based on year, make, body, odometer, price
-  const color = d3.scaleOrdinal(d3.schemeCategory10);
+  // Function to get color based on node name and value
+  const getColor = (name, value) =>
+  {
+    const category = name.split('-')[0];
+    return colorScales[category](value);
+  };
 
-  // connect links
+  // Connect links
   svg.append("g")
     .attr("fill", "none")
     .selectAll("path")
@@ -257,7 +113,7 @@ export function Graph1_Overall()
     .enter()
     .append("path")
     .attr("d", sankeyLinkHorizontal())
-    .attr("stroke", d => color(d.source.name.split('-')[0]))  // Apply color based on category
+    .attr("stroke", d => getColor(d.source.name, d.value))
     .attr("stroke-width", d => Math.max(1, d.width))
     .style("opacity", 0.6);
 
@@ -299,11 +155,34 @@ export function Graph1_Overall()
       }
     })
     .attr("stroke", "#000");
+  // Add color legend
+  const legend = svg.append("g")
+    .attr("transform", `translate(0, ${ height + 10 })`);
 
-  // Add legend
-  nodeGroup.selectAll("rect")
-    .append("title")
-    .text(d => d.name.split('-')[1])
-    .attr("fill", d => d3.scaleOrdinal(d3.schemeCategory10)(d.name.split('-')[0]))
-    .attr("stroke", "#000");
+  const legendData = [
+    { category: 'year', color: colorScales.year(1) },
+    { category: 'make', color: colorScales.make(1) },
+    { category: 'body', color: colorScales.body(1) },
+    { category: 'odometer', color: colorScales.odometer(1) },
+    { category: 'price', color: colorScales.price(1) }
+  ];
+
+  const legendItem = legend.selectAll("g")
+    .data(legendData)
+    .enter()
+    .append("g")
+    .attr("transform", (d, i) => `translate(${ i * 100 }, 0)`);
+
+  legendItem.append("rect")
+    .attr("width", 20)
+    .attr("height", 20)
+    .attr("fill", d => d.color);
+
+  legendItem.append("text")
+    .attr("x", 25)
+    .attr("y", 10)
+    .attr("dy", "0.35em")
+    .style("font", "12px sans-serif")
+    .text(d => d.category);
+
 }

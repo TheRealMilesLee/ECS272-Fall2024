@@ -56,9 +56,7 @@ const onResize = (targets) =>
 export const Graph1_OverallView = () => (
   `<div id='parallel-coordinates-container-graph1'>
         <svg id='Graph1'></svg>
-        <p>
-          <b> Graph 1. </b> Overall View of used car sold situation.
-        </p>
+        <i>  <b> Graph 1. </b> Overall View of used car sold situation. </i>
     </div>`
 );
 
@@ -70,9 +68,7 @@ export const Graph1_OverallView = () => (
 export const Graph2_DetailView = () => (
   `<div id='pie-container-graph2'>
       <svg id='Graph2'></svg>
-      <p>
-        <b> Graph 2. </b> The distribution of people's brand preferences by percentage.
-      </p>
+      <i>  <b> Graph 2. </b> Odometer distribution  </i>
     </div>
     `
 );
@@ -86,9 +82,7 @@ export const Graph2_DetailView = () => (
 export const Graph3_DetailView = () => (
   `<div id='bar-container-graph3'>
         <svg id='Graph3'></svg>
-        <p>
-          <b> Graph 3. </b> The number of cars sold each year.
-        </p>
+        <i> <b> Graph 3. </b> The average price for each manufactor </i>
     </div>`
 );
 
