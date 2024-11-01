@@ -6,7 +6,7 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
-  background: linear-gradient(45deg, black, gray, white);
+  background: linear-gradient(45deg, #1a1a1a, #3a3a3a, #5a5a5a);
 }
 
 body {

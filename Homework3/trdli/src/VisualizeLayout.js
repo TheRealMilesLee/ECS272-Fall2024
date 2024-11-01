@@ -82,7 +82,7 @@ export const Graph2_DetailView = () => (
 export const Graph3_DetailView = () => (
   `<div id='bar-container-graph3'>
         <svg id='Graph3'></svg>
-        <i> <b> Graph 3. </b> The average price for each manufactor </i>
+        <i> <b> Graph 3. </b> Percentage of Cars Sold by Region </i>
     </div>`
 );
 
