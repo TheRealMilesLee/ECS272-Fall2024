@@ -94,21 +94,50 @@ export function Graph1_Overall()
     .attr("height", height + margin.top + margin.bottom)
     .append("g")
     .attr("transform", `translate(${ margin.left },${ margin.top })`);
-  // Define color scales for each category with higher contrast
-  const colorScales = {
-    year: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('year-')), d => d.value)]).range(["#2d85c4", "#ae1aed"]),
-    region: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('region-')), d => d.value)]).range(["#ae1aed", "#1ae843"]),
-    body: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('body-')), d => d.value)]).range(["#1ae843", "#e38b19"]),
-    odometer: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('odometer-')), d => d.value)]).range(["#e38b19", "#e64915"]),
-    price: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('price-')), d => d.value)]).range(["#e64915", "#75250b"])
+
+  // 定义颜色过渡方案
+  const colorTransitions = {
+    "year-region": ["#2d85c4", "#ae1aed"], // 蓝色到紫色
+    "region-body": ["#ae1aed", "#1ae843"], // 紫色到绿色
+    "body-odometer": ["#1ae843", "#e38b19"], // 绿色到橙色
+    "odometer-price": ["#e38b19", "#e64915"] // 橙色到红色
   };
 
-  // Function to get color based on node name and value
-  const getColor = (name, value) =>
+  // 在 SVG 中创建 defs 容器用于渐变
+  const defs = svg.append("defs");
+
+  // 动态创建渐变
+  const createGradient = (id, colors) =>
   {
-    const category = name.split('-')[0];
-    return colorScales[category](value);
+    const gradient = defs.append("linearGradient")
+      .attr("id", id)
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "0%");
+
+    gradient.append("stop").attr("offset", "0%").attr("stop-color", colors[0]);
+    gradient.append("stop").attr("offset", "100%").attr("stop-color", colors[1]);
   };
+
+  // 获取渐变颜色的函数
+  const getColor = (sourceName, targetName) =>
+  {
+    const transitionKey = `${ sourceName.split('-')[0] }-${ targetName.split('-')[0] }`;
+    const gradientId = `${ transitionKey }-gradient`;
+
+    // 检查 defs 中是否已存在该渐变
+    if (!defs.select(`#${ gradientId }`).node())
+    {
+      const colors = colorTransitions[transitionKey];
+      if (colors) createGradient(gradientId, colors);
+    }
+
+    // 返回渐变 ID，用于 stroke 填充
+    return `url(#${ gradientId })`;
+  };
+
+
 
   // Connect links
   svg.append("g")
