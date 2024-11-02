@@ -3,6 +3,12 @@ import { size } from './VisualizeLayout.js';
 import { graph1_data_cleaning } from './graphDataCleaning.js';
 import { sankey, sankeyLinkHorizontal } from 'd3-sankey';
 
+/**
+ * For this diagram, we decide to use Sankey as a overall view diagram. We have columns like
+ * year, make, body, odometer, and price. This would show the overall distribution of the data.
+ * Also, by watching which range has the thicker line, we can know which range would be the most popular.
+ * hence, more recommand for people to buy a used car.
+ */
 export function Graph1_Overall()
 {
   const margin = { top: 20, right: 10, bottom: 30, left: 10 };
@@ -11,30 +17,29 @@ export function Graph1_Overall()
   const afterCleanData_Graph1 = graph1_data_cleaning();
   d3.sort(afterCleanData_Graph1, d => d.year);
 
-  if (afterCleanData_Graph1.length === 0)
-  {
-    console.error('No data available for visualization');
-    return;
-  }
-
   // Initialize nodes and links and prepare the categories for the sankey diagram
   const nodes = [];
   const links = [];
-  const categories = ['year', 'make', 'body', 'odometer', 'price'];
+  const categories = ['year', 'region', 'body', 'odometer', 'price'];
   const nodeMap = new Map();
 
-  // Create nodes for each category
-  categories.forEach(category =>
+  // Create nodes for year, region, body, odometer, and price
+  categories.forEach((category, i) =>
   {
-    const uniqueValues = new Set(afterCleanData_Graph1.map(d => d[category]));
-    uniqueValues.forEach(value =>
+    const categoryNodes = Array.from(new Set(afterCleanData_Graph1.map(d => d[category]))).sort();
+    categoryNodes.forEach((name, j) =>
     {
-      const nodeName = `${ category }-${ value }`;
-      if (!nodeMap.has(nodeName))
-      {
-        nodeMap.set(nodeName, nodes.length);
-        nodes.push({ name: nodeName });
-      }
+      const nodeName = `${ category }-${ name }`;
+      nodes.push({
+        name: nodeName,
+        layer: i,
+        value: afterCleanData_Graph1.filter(d => d[category] === name).length,
+        x0: i * width / categories.length,
+        y0: j * height / categoryNodes.length,
+        x1: (i + 1) * width / categories.length,
+        y1: (j + 1) * height / categoryNodes.length
+      });
+      nodeMap.set(nodeName, nodes.length - 1);
     });
   });
 
@@ -92,7 +97,7 @@ export function Graph1_Overall()
   // Define color scales for each category with higher contrast
   const colorScales = {
     year: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('year-')), d => d.value)]).range(["#2d85c4", "#ae1aed"]),
-    make: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('make-')), d => d.value)]).range(["#ae1aed", "#1ae843"]),
+    region: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('region-')), d => d.value)]).range(["#ae1aed", "#1ae843"]),
     body: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('body-')), d => d.value)]).range(["#1ae843", "#e38b19"]),
     odometer: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('odometer-')), d => d.value)]).range(["#e38b19", "#e64915"]),
     price: d3.scaleLinear().domain([0, d3.max(sankeyData.nodes.filter(d => d.name.startsWith('price-')), d => d.value)]).range(["#e64915", "#75250b"])
@@ -161,7 +166,7 @@ export function Graph1_Overall()
 
   const legendData = [
     { category: 'year', color: colorScales.year(1) },
-    { category: 'make', color: colorScales.make(1) },
+    { category: 'region', color: colorScales.region(1) },
     { category: 'body', color: colorScales.body(1) },
     { category: 'odometer', color: colorScales.odometer(1) },
     { category: 'price', color: colorScales.price(1) }
@@ -184,5 +189,30 @@ export function Graph1_Overall()
     .attr("dy", "0.35em")
     .style("font", "12px sans-serif")
     .text(d => d.category);
+  // Add filter functionality
+  nodeRects.on("click", function (event, d)
+  {
+    const selectedNode = d;
+    const isActive = d3.select(this).classed("active");
 
+    // Reset all nodes and links
+    nodeRects.classed("active", false).attr("opacity", 1);
+    svg.selectAll("path").attr("stroke", d => getColor(d.source.name, d.value)).attr("opacity", 0.6);
+
+    if (!isActive)
+    {
+      // Highlight selected node and related links
+      d3.select(this).classed("active", true).attr("opacity", 1);
+      svg.selectAll("path")
+        .transition()
+        .duration(500)
+        .attr("stroke", d => (d.source === selectedNode || d.target === selectedNode) ? getColor(d.source.name, d.value) : "#ccc")
+        .attr("opacity", d => (d.source === selectedNode || d.target === selectedNode) ? 0.6 : 0.1);
+      nodeRects.attr("opacity", d => (d === selectedNode || sankeyData.links.some(link => link.source === selectedNode && link.target === d || link.source === d && link.target === selectedNode)) ? 1 : 0.1);
+
+      // Send selected node data to another JS file
+      const event = new CustomEvent('nodeSelected', { detail: { category: selectedNode.name.split('-')[0], value: selectedNode.name.split('-')[1] } });
+      window.dispatchEvent(event);
+    }
+  });
 }

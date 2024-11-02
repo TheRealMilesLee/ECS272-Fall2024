@@ -2,6 +2,12 @@ import * as d3 from 'd3';
 import { column_from_csv } from './csvReadIn.js';
 
 
+/**
+ * Categorizes a given year into predefined year ranges.
+ *
+ * @param {number} year - The year to categorize.
+ * @returns {string} The label of the year range that the given year falls into, or 'Unknown' if the year does not fall into any predefined range.
+ */
 function categorizeYear(year)
 {
   const yearRanges = [
@@ -26,6 +32,15 @@ function categorizeYear(year)
   return 'Unknown';
 }
 
+/**
+ * @brief Categorizes a car make into a region.
+ *
+ * This function takes a car make as input and returns the region (Japanese, European, American, Korean, or Other)
+ * that the make belongs to. The comparison is case-insensitive.
+ *
+ * @param {string} make - The car make to categorize.
+ * @return {string} The region of the car make.
+ */
 function categoriesMake(make)
 {
   make = make.toLowerCase();
@@ -41,6 +56,13 @@ function categoriesMake(make)
   return 'Other';
 }
 
+/**
+ * Categorizes the given vehicle body description into a predefined category.
+ *
+ * @param {string} body - The description of the vehicle body.
+ * @returns {string} - The category of the vehicle body. Returns 'Unknown' if the body is not provided,
+ *                     or 'Other' if the body does not match any predefined categories.
+ */
 function categorizeBody(body)
 {
   if (!body) return 'Unknown';
@@ -54,6 +76,12 @@ function categorizeBody(body)
   return categories.find(category => bodyLower.includes(category)) || 'Other';
 }
 
+/**
+ * Categorizes the given odometer reading into predefined mileage ranges.
+ *
+ * @param {string|number} odometer - The odometer reading to categorize. Can be a string or number.
+ * @returns {string} The label of the mileage range that the odometer reading falls into, or 'Unknown' if the input is invalid.
+ */
 function categoriesOdometer(odometer)
 {
   // Odometer categories
@@ -61,14 +89,10 @@ function categoriesOdometer(odometer)
     { label: `0-1000 miles`, start: 0, end: 1000 },
     { label: `1000-5000 miles`, start: 1000, end: 5000 },
     { label: `5000-10000 miles`, start: 5000, end: 10000 },
-    { label: `10000-20000 miles`, start: 10000, end: 20000 },
-    { label: `20000-40000 miles`, start: 20000, end: 40000 },
-    { label: `40000-60000 miles`, start: 40000, end: 60000 },
-    { label: `60000-80000 miles`, start: 60000, end: 80000 },
-    { label: `80000-100000 miles`, start: 80000, end: 100000 },
+    { label: `10000-50000 miles`, start: 10000, end: 50000 },
+    { label: `50000-100000 miles`, start: 50000, end: 100000 },
     { label: `100000-120000 miles`, start: 100000, end: 120000 },
-    { label: `120000-140000 miles`, start: 120000, end: 140000 },
-    { label: `140000-160000 miles`, start: 140000, end: 160000 },
+    { label: `120000-160000 miles`, start: 120000, end: 160000 },
     { label: `160000-180000 miles`, start: 160000, end: 180000 },
     { label: `180000-200000 miles`, start: 180000, end: 200000 },
     { label: `200000+ miles`, start: 200000, end: Infinity }
@@ -93,6 +117,12 @@ function categoriesOdometer(odometer)
   }
 }
 
+/**
+ * Categorizes a given price into predefined price ranges.
+ *
+ * @param {string|number} price - The price to categorize. Can be a string or number.
+ * @returns {string} The label of the price range the given price falls into, or 'Unknown' if the price is invalid.
+ */
 function categoriesPrice(price)
 {
   const priceRanges = [
@@ -133,20 +163,20 @@ export function graph1_data_cleaning()
   return column_from_csv.map(d =>
   {
     const year = categorizeYear(d.year);
-    const make = categoriesMake(d.make);
+    const region = categoriesMake(d.make);
     const body = categorizeBody(d.body);
     const odometer = categoriesOdometer(d.odometer);
     const price = categoriesPrice(d.price);
-    const uniqueKey = `${ year }-${ make }-${ body }`;
+    const uniqueKey = `${ year }-${ region }-${ body }`;
     if (!uniqueEntries.has(uniqueKey))
     {
       uniqueEntries.add(uniqueKey);
       return {
         year: year,
-        make: make,
+        region: region,
         body: body,
-        odometer: odometer,
-        price: price
+        odometer: odometer,  // Use numeric ranges
+        price: price  // Use numeric ranges
       };
     }
     return null;
