@@ -198,6 +198,7 @@ export function Graph1_Overall()
     // Reset all nodes and links
     nodeRects.classed("active", false).attr("opacity", 1);
     svg.selectAll("path").attr("stroke", d => getColor(d.source.name, d.value)).attr("opacity", 0.6);
+    window.dispatchEvent(new CustomEvent('nodeSelected', { detail: { category: null, value: null } }));
 
     if (!isActive)
     {

@@ -63,17 +63,19 @@ export function Graph3_Detail()
   {
     const { category, value } = event.detail;
 
-    if (category === 'region')
+    // 先判断是否是二次点击
+    if (category === null && value === null)
     {
-      if (currentState.view === 'manufacturer' && currentState.selectedRegion === value)
+      // 如果是点击相同的区域，重置回区域视图
+      currentState.view = 'region';
+      currentState.selectedRegion = null;
+      drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover);
+    }
+    else
+    {
+      // 如果是点击不同区域，且是region类别
+      if (category === 'region')
       {
-        // If clicking the same region again, switch back to region view
-        currentState.view = 'region';
-        currentState.selectedRegion = null;
-        drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover);
-      } else
-      {
-        // Switch to manufacturer view for the selected region
         currentState.view = 'manufacturer';
         currentState.selectedRegion = value;
         updateChart(value, manufactorData, pie, arc, color, chartContainer_pie, arcHover);
