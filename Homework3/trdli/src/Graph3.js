@@ -15,12 +15,11 @@ export function Graph3_Detail()
   const radius = (Math.min(width, height) / 3.1415926) + 50;
 
   // Create the main SVG container
-  const svg = d3.select('#Graph3')
+  const chartContainer_pie = d3.select('#Graph3')
     .attr("width", "100%")
     .attr("height", "100%")
-    .attr("preserveAspectRatio", "xMidYMid meet");
-
-  const chartContainer_pie = svg.append("g")
+    .attr("preserveAspectRatio", "xMidYMid meet")
+    .append("g")
     .attr("transform", `translate(${ width / 2 }, ${ height / 2 })`);
 
   // Data preprocessing
@@ -31,18 +30,18 @@ export function Graph3_Detail()
   // Compute each region's percentage of cars sold
   const total = d3.sum(regionCategory, d => d.count);
   const regionPercentages = regionCategory.map(d => ({
-    key: d.category,
-    value: d.count,
+    category: d.category,
+    count: d.count,
     percentage: (d.count / total) * 100
   }));
 
   // Set up the color scale based on the category
   const color = d3.scaleOrdinal()
-    .domain(regionPercentages.map(d => d.key))
+    .domain(regionPercentages.map(d => d.category))
     .range(d3.schemeCategory10);
 
   // create the pie
-  const pie = d3.pie().value(d => d.value);
+  const pie = d3.pie().value(d => d.count);
 
   // Create the arc generator
   const arc = d3.arc().innerRadius(5).outerRadius(radius);
@@ -50,7 +49,7 @@ export function Graph3_Detail()
   const arcHover = d3.arc().innerRadius(5).outerRadius(radius * 1.15);
 
   // Initial drawing
-  drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover);
+  drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius);
 
   // Track the current view state
   let currentState = {
@@ -69,7 +68,7 @@ export function Graph3_Detail()
       // 如果是点击相同的区域，重置回区域视图
       currentState.view = 'region';
       currentState.selectedRegion = null;
-      drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover);
+      drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius);
     }
     else
     {
@@ -78,7 +77,7 @@ export function Graph3_Detail()
       {
         currentState.view = 'manufacturer';
         currentState.selectedRegion = value;
-        updateChart(value, manufactorData, pie, arc, color, chartContainer_pie, arcHover);
+        updateChart(value, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius);
       }
     }
   }
@@ -88,7 +87,7 @@ export function Graph3_Detail()
   window.addEventListener('nodeSelected', onNodeSelected);
 }
 
-function drawChart(data, pie, arc, color, chartContainer_pie, arcHover)
+function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
 {
   // Clear existing content
   chartContainer_pie.selectAll("*").remove();
@@ -102,28 +101,36 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover)
     .append("g")
     .attr("class", "arc");
 
-  // Append the path for each arc
+  // Append the path for each arc with transition
   arcs.append("path")
-    .attr("d", arc)
-    .attr("fill", d => color(d.data.key));
+    .attr("fill", d => color(d.data.category))
+    .transition()
+    .duration(750)
+    .attrTween("d", function (d)
+    {
+      const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+      return function (t)
+      {
+        return arc(interpolate(t));
+      };
+    });
 
   // Create the hover effect for the slices
   arcs.append("path")
-    .attr("d", arc)
-    .attr("fill", d => color(d.data.key))
-    .on("mouseover", function (event, d)
+    .attr("fill", d => color(d.data.category))
+    .on("mouseover", function (d)
     {
       d3.select(this).transition()
         .duration(100)
         .attr("d", arcHover);
 
       chartContainer_pie.selectAll("text")
-        .filter(textData => textData.data.key === d.data.key)
+        .filter(textData => textData.data.category === d.data.category)
         .transition()
         .duration(100)
         .style("font-size", "14px");
     })
-    .on("mouseout", function (event, d)
+    .on("mouseout", function (d)
     {
       d3.select(this).transition()
         .duration(100)
@@ -136,41 +143,74 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover)
         .style("font-size", "10px");
     });
 
-  // Create text labels
-  chartContainer_pie.selectAll("text")
+  // Create text labels with transition
+  const textLabels = chartContainer_pie.selectAll("text")
     .data(pieData)
     .enter()
     .append("text")
-    .attr("transform", function (d)
-    {
-      const pos = arc.centroid(d);
-      const angle = midAngle(d) * 180 / Math.PI - 90;
-      pos[0] = pos[0] * 1.3;
-      pos[1] = pos[1] * 1.3;
-      return `translate(${ pos }) rotate(${ angle })`;
-    })
     .attr("dy", ".35em")
     .attr("text-anchor", "middle")
-    .text(d =>
-    {
-      const percentage = d.data.percentage.toFixed(2);
-      return `${ d.data.key } (${ percentage }%)`;
-    })
     .style("font-size", "10px")
     .style("font-weight", "bold")
     .style("fill", "black")
-    .attr("transform", function (d)
+    .text(d =>
     {
-      const pos = arc.centroid(d);
-      const angle = midAngle(d) * 180 / Math.PI - 90;
-      pos[0] = pos[0] * 1.3;
-      pos[1] = pos[1] * 1.3;
-      const rotation = (['Korean', 'European', 'Japanese'].includes(d.data.key)) ? angle + 180 : angle;
-      return `translate(${ pos }) rotate(${ rotation })`;
+      const percentage = d.data.percentage.toFixed(2);
+      return `${ d.data.category } (${ percentage }%)`;
     });
+
+  textLabels.transition()
+    .duration(750)
+    .attrTween("transform", function (d)
+    {
+      const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
+      return function (t)
+      {
+        const interpolated = interpolate(t);
+        const pos = arc.centroid(interpolated);
+        const angle = midAngle(interpolated) * 180 / Math.PI - 90;
+        pos[0] = pos[0] * 1.3;
+        pos[1] = pos[1] * 1.3;
+        let rotation;
+        if (midAngle(interpolated) < Math.PI / 2)
+        {
+          rotation = angle;
+        }
+        else if (midAngle(interpolated) >= Math.PI / 2 && midAngle(interpolated) < Math.PI)
+        {
+          rotation = angle - 90;
+        }
+        else
+        {
+          rotation = angle + 180;
+        }
+        return `translate(${ pos }) rotate(${ rotation })`;
+      };
+    });
+
+  // Create the color legend next to the pie chart
+  const colorLegend = chartContainer_pie.selectAll(".color-legend")
+    .data(data)
+    .enter()
+    .append("g")
+    .attr("class", "color-legend")
+    .attr("transform", (d, i) => `translate(${ radius + 20 }, ${ 20 + i * 20 })`);
+
+  colorLegend.append("rect")
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("fill", d => color(d.category));
+
+  colorLegend.append("text")
+    .attr("x", 15)
+    .attr("y", 10)
+    .style("font-size", "10px")
+    .text(d => d.category);
+
+
 }
 
-function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie, arcHover)
+function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius)
 {
   const JapaneseMakes = ['toyota', 'isuzu', 'honda', 'nissan', 'subaru', 'mazda', 'iszuzu', 'mitsubishi', 'suzuki', 'daihatsu', 'lexus', 'infiniti', 'acura', 'scion'];
   const EuropeanMakes = ['volkswagen', 'geo', 'rolls-royce', 'fisker', 'audi', 'bmw', 'mercedes-benz', 'porsche', 'volvo', 'saab', 'fiat', 'alfa', 'jaguar', 'land rover', 'mini', 'smart', 'bentley', 'rolls royce', 'aston martin', 'lotus', 'maserati', 'lamborghini', 'ferrari'];
@@ -194,25 +234,25 @@ function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie
 
   const total = d3.sum(filteredData, d => d.count);
   let pieData = filteredData.map(d => ({
-    key: d.make,
-    value: d.count,
+    category: d.make,
+    count: d.count,
     percentage: (d.count / total) * 100
   }));
 
   // Combine small percentages into 'Other'
   const otherData = pieData.filter(d => d.percentage < 2);
-  const otherTotal = d3.sum(otherData, d => d.value);
+  const otherTotal = d3.sum(otherData, d => d.count);
   pieData = pieData.filter(d => d.percentage >= 2);
   if (otherTotal > 0)
   {
     pieData.push({
-      key: 'Other',
-      value: otherTotal,
+      category: 'Other',
+      count: otherTotal,
       percentage: (otherTotal / total) * 100
     });
   }
 
-  drawChart(pieData, pie, arc, color, chartContainer_pie, arcHover);
+  drawChart(pieData, pie, arc, color, chartContainer_pie, arcHover, radius);
 }
 
 function midAngle(d)
