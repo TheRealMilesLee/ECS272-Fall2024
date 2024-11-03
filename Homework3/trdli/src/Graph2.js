@@ -105,7 +105,7 @@ export function Graph2_Detail()
     .attr("y", -40)
     .attr("transform", "rotate(-90)")
     .attr("text-anchor", "middle")
-    .text("Price")
+    .text("Average Price")
     .style("font-size", "12px");
 
   // Create the color legend next to the line chart
