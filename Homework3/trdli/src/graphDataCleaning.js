@@ -183,34 +183,22 @@ export function graph1_data_cleaning()
   }).filter(d => d !== null);  // Filter out null entries
 }
 
-/**
- * @brief The function `Graph2_data_cleaning` groups the data by odometer ranges and counts the number of cars in each range for each brand.
- * @returns {Object} An object containing the grouped data array and the total count of cars.
- */
 export function Graph2_data_cleaning()
 {
-  // Group the data by odometer range and brand, and count the number of cars in each range for each brand
-  const odometerBrandCount = d3.rollup(column_from_csv, v => v.length, d => categoriesOdometer(d.odometer), d => d.make);
+  // Group the data by the year and price categories
+  const dataGrouped = d3.group(column_from_csv, d => categorizeYear(d.year));
 
-  // Convert the Map to an array for tree map and merge duplicate brands
-  const data = Array.from(odometerBrandCount, ([range, brands]) => ({
-    range,
-    brands: Array.from(brands, ([brand, count]) => ({ brand, count }))
-      .reduce((acc, { brand, count }) =>
-      {
-        const existingBrand = acc.find(b => b.brand === brand);
-        if (existingBrand)
-        {
-          existingBrand.count += count;
-        } else
-        {
-          acc.push({ brand, count });
-        }
-        return acc;
-      }, [])
-  }));
+  const FinalData = Array.from(dataGrouped, ([yearRange, values]) =>
+  {
+    const totalPrices = values.reduce((sum, d) => sum + parseInt(d.price), 0);
+    const averagePrice = totalPrices / values.length;
+    return {
+      year: yearRange,
+      price: averagePrice
+    };
+  });
 
-  return { data };
+  return FinalData;
 }
 
 

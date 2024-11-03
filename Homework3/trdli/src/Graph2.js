@@ -1,16 +1,14 @@
 import * as d3 from 'd3';
 import { size } from "./VisualizeLayout.js";
 import { Graph2_data_cleaning } from './graphDataCleaning.js';
-/**
- * @brief Creates a tree map visualization showing vehicle counts by odometer range
- * @returns A D3.js tree map with interactive tooltips showing top brands
- */
+
+/** For this graph, we would like to create a line plot to show the relationship between the year and price of the cars.*/
 export function Graph2_Detail()
 {
   // Set up the margin for the chart
-  const margin = { top: 10, right: 10, bottom: 50, left: 10 };
+  const margin = { top: 25, right: 55, bottom: 25, left: 55 };
   const width = size.width - margin.left - margin.right;
-  const height = size.height - margin.top - margin.bottom;
+  const height = size.height - margin.top - margin.bottom - 40;
 
   // Set up the SVG container
   const chartContainer_graph2 = d3.select("#Graph2")
@@ -22,95 +20,111 @@ export function Graph2_Detail()
 
   // Clean the data and get the grouped data
   const recieved_clean_result = Graph2_data_cleaning();
-  const data = recieved_clean_result.data;
 
-  // Process data to get total count for each range
-  const processedData = data.map(item => ({
-    range: item.range,
-    count: item.brands.reduce((sum, brand) => sum + brand.count, 0),
-    brands: item.brands.sort((a, b) => b.count - a.count).slice(0, 3) // Get top 3 brands by count
-  }));
+  // Set up the x and y axis
+  const x = d3.scaleBand()
+    .domain(recieved_clean_result.map(d => d.year))
+    .range([0, width])
+    .padding(0.1);
 
-  // Set up the color scale
-  const colorScale = d3.scaleLinear()
-    .domain([0, d3.max(processedData, d => d.count)])
-    .range(["#2ab1fa", "#114561"]);
+  const y = d3.scaleLinear()
+    .domain([d3.min(recieved_clean_result, d => d.price), d3.max(recieved_clean_result, d => d.price)])
+    .range([height, 0]);
 
-  // Set up the root hierarchy
-  const root = d3.hierarchy({ children: processedData })
-    .sum(d => d.count)
-    .sort((a, b) => b.value - a.value);
+  // Create the x and y axis
+  const xAxis = d3.axisBottom(x);
+  const yAxis = d3.axisLeft(y);
 
-  // Create the tree map layout
-  d3.treemap().size([width, height]).padding(2)(root);
+  // Append the x and y axis
+  chartContainer_graph2.append("g")
+    .attr("transform", `translate(0, ${ height })`)
+    .call(xAxis);
 
-  // Create tooltip
-  const tooltip = d3.select("body").selectAll("#tooltip").data([0])
-    .join("div")
-    .attr("id", "tooltip")
-    .style("position", "absolute")
-    .style("background-color", "rgba(255, 255, 255, 0.9)")
-    .style("padding", "10px")
-    .style("border", "1px solid #ddd")
-    .style("border-radius", "4px")
-    .style("box-shadow", "2px 2px 6px rgba(0, 0, 0, 0.1)")
-    .style("pointer-events", "none")
-    .style("opacity", 0)
+  chartContainer_graph2.append("g")
+    .call(yAxis);
+
+  // Create the line generator
+  const line = d3.line()
+    .x(d => x(d.year) + x.bandwidth() / 2)
+    .y(d => y(d.price));
+
+  // Define the gradient
+  const gradient = chartContainer_graph2.append("defs")
+    .append("linearGradient")
+    .attr("id", "line-gradient")
+    .attr("x1", "0%")
+    .attr("y1", "0%")
+    .attr("x2", "100%")
+    .attr("y2", "0%");
+
+  // Define gradient stops based on year range
+  const years = recieved_clean_result.map(d => d.year);
+  const colors = d3.scaleLinear()
+    .domain([0, years.length - 1])
+    .range(["blue", "purple"]);
+
+  years.forEach((year, index) =>
+  {
+    gradient.append("stop")
+      .attr("offset", `${ (index / (years.length - 1)) * 100 }%`)
+      .attr("stop-color", colors(index));
+  });
+
+  // Append the path for the line chart
+  const path = chartContainer_graph2.append("path")
+    .datum(recieved_clean_result)
+    .attr("fill", "none")
+    .attr("stroke-width", 5)
+    .attr("d", line)
+    .attr("stroke", "url(#line-gradient)")
+    .attr("stroke-linejoin", "round")
+    .attr("stroke-linecap", "round")
+    .attr("stroke-opacity", 0.8);
+
+  // Animate the line chart
+  const totalLength = path.node().getTotalLength();
+
+  path.attr("stroke-dasharray", `${ totalLength } ${ totalLength }`)
+    .attr("stroke-dashoffset", totalLength)
+    .transition()
+    .duration(1000)
+    .ease(d3.easeLinear)
+    .attr("stroke-dashoffset", 0);
+
+  // Create the x-axis label
+  chartContainer_graph2.append("text")
+    .attr("x", width / 2)
+    .attr("y", height + 40)
+    .attr("text-anchor", "middle")
+    .text("Year")
     .style("font-size", "12px");
 
-  // Add the rectangles for the tree map
-  const nodes = chartContainer_graph2.selectAll("g")
-    .data(root.leaves())
-    .join("g")
-    .attr("transform", d => `translate(${ d.x0 }, ${ d.y0 })`);
+  // Create the y-axis label
+  chartContainer_graph2.append("text")
+    .attr("x", -height / 2 + 10)
+    .attr("y", -40)
+    .attr("transform", "rotate(-90)")
+    .attr("text-anchor", "middle")
+    .text("Price")
+    .style("font-size", "12px");
 
-  nodes.append("rect")
-    .attr("width", d => d.x1 - d.x0)
-    .attr("height", d => d.y1 - d.y0)
-    .attr("fill", d => colorScale(d.data.count))
-    .style("stroke", "#fff")
-    .style("stroke-width", "1px")
-    .on("mouseover", function (event, d)
-    {
-      const brandList = d.data.brands
-        .map((brand, index) => `${ index + 1 }. ${ brand.brand }`)
-        .join("<br>");
+  // Create the color legend next to the line chart
+  const colorLegend = chartContainer_graph2.selectAll(".color-legend")
+    .data(recieved_clean_result)
+    .enter()
+    .append("g")
+    .attr("class", "color-legend")
+    .attr("transform", (d, i) => `translate(${ width - 10 }, ${ i * 20 })`);
 
-      tooltip.html(`
-        Top 3 Brands:<br>
-        ${ brandList }
-      `)
-        .style("left", `${ event.pageX + 10 }px`)
-        .style("top", `${ event.pageY + 10 }px`)
-        .style("opacity", 1);
+  colorLegend.append("rect")
+    .attr("width", 10)
+    .attr("height", 10)
+    .attr("fill", d => colors(years.indexOf(d.year)));
 
-      d3.select(this)
-        .style("stroke", "#000")
-        .style("stroke-width", "2px");
-    })
-    .on("mouseout", function ()
-    {
-      tooltip.style("opacity", 0);
-      d3.select(this)
-        .style("stroke", "#fff")
-        .style("stroke-width", "1px");
-    });
+  colorLegend.append("text")
+    .attr("x", 15)
+    .attr("y", 10)
+    .style("font-size", "10px")
+    .text(d => d.year);
 
-  // Add labels to the rectangles
-  nodes.append("text")
-    .attr("x", 5)
-    .attr("y", 20)
-    .selectAll("tspan")
-    .data(d => [
-      `${ d.data.range }`,
-      `${ d.data.count.toLocaleString() } vehicles`
-    ])
-    .join("tspan")
-    .attr("x", 5)
-    .attr("y", (d, i) => 20 + i * 20)
-    .text(d => d)
-    .attr("fill", "white")
-    .style("font-size", "12px")
-    .style("font-weight", "bold")
-    .style("text-shadow", "1px 1px 1px rgba(0,0,0,0.5)");
 }

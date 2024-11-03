@@ -97,11 +97,12 @@ export function Graph1_Overall()
 
   // 定义颜色过渡方案
   const colorTransitions = {
-    "year-region": ["#2d85c4", "#ae1aed"], // 蓝色到紫色
-    "region-body": ["#ae1aed", "#1ae843"], // 紫色到绿色
-    "body-odometer": ["#1ae843", "#e38b19"], // 绿色到橙色
-    "odometer-price": ["#e38b19", "#e64915"] // 橙色到红色
+    "year": ["#2d85c4", "#ae1aed"],
+    "region": ["#ae1aed", "#1ae843"],
+    "body": ["#1ae843", "#ff8800"],
+    "odometer": ["#ff8800", "#de0b5f"],
   };
+
 
   // 在 SVG 中创建 defs 容器用于渐变
   const defs = svg.append("defs");
@@ -121,19 +122,20 @@ export function Graph1_Overall()
   };
 
   // 获取渐变颜色的函数
-  const getColor = (sourceName, targetName) =>
+  const getColor = (source) =>
   {
-    const transitionKey = `${ sourceName.split('-')[0] }-${ targetName.split('-')[0] }`;
-    const gradientId = `${ transitionKey }-gradient`;
+    // 从 source 提取类别前缀
+    const category = source.split('-')[0]; // 现在会是 "odometer" 等
+    const gradientId = `${ category }-gradient`;
 
     // 检查 defs 中是否已存在该渐变
     if (!defs.select(`#${ gradientId }`).node())
     {
-      const colors = colorTransitions[transitionKey];
+      const colors = colorTransitions[category]; // 根据类别提取颜色
       if (colors) createGradient(gradientId, colors);
     }
 
-    // 返回渐变 ID，用于 stroke 填充
+    // 返回渐变 ID,用于 stroke 填充
     return `url(#${ gradientId })`;
   };
 
@@ -147,7 +149,7 @@ export function Graph1_Overall()
     .enter()
     .append("path")
     .attr("d", sankeyLinkHorizontal())
-    .attr("stroke", d => getColor(d.source.name, d.value))
+    .attr("stroke", d => getColor(d.source.name))
     .attr("stroke-width", d => Math.max(1, d.width))
     .style("opacity", 0.6);
 
@@ -194,12 +196,14 @@ export function Graph1_Overall()
     .attr("transform", `translate(0, ${ height + 10 })`);
 
   const legendData = [
-    { category: 'year', color: colorScales.year(1) },
-    { category: 'region', color: colorScales.region(1) },
-    { category: 'body', color: colorScales.body(1) },
-    { category: 'odometer', color: colorScales.odometer(1) },
-    { category: 'price', color: colorScales.price(1) }
+    { category: 'year', color: colorTransitions["year"][0] },
+    { category: 'region', color: colorTransitions["region"][0] },
+    { category: 'body', color: colorTransitions["body"][0] },
+    { category: 'odometer', color: colorTransitions["odometer"][0] },
+    { category: 'price', color: colorTransitions["odometer"][1] }
   ];
+
+
 
   const legendItem = legend.selectAll("g")
     .data(legendData)
@@ -226,7 +230,7 @@ export function Graph1_Overall()
 
     // Reset all nodes and links
     nodeRects.classed("active", false).attr("opacity", 1);
-    svg.selectAll("path").attr("stroke", d => getColor(d.source.name, d.value)).attr("opacity", 0.6);
+    svg.selectAll("path").attr("stroke", d => getColor(d.source.name)).attr("opacity", 0.6);
     window.dispatchEvent(new CustomEvent('nodeSelected', { detail: { category: null, value: null } }));
 
     if (!isActive)
@@ -236,7 +240,7 @@ export function Graph1_Overall()
       svg.selectAll("path")
         .transition()
         .duration(500)
-        .attr("stroke", d => (d.source === selectedNode || d.target === selectedNode) ? getColor(d.source.name, d.value) : "#ccc")
+        .attr("stroke", d => (d.source === selectedNode || d.target === selectedNode) ? getColor(d.source.name) : "#bab5af")
         .attr("opacity", d => (d.source === selectedNode || d.target === selectedNode) ? 0.6 : 0.1);
       nodeRects.attr("opacity", d => (d === selectedNode || sankeyData.links.some(link => link.source === selectedNode && link.target === d || link.source === d && link.target === selectedNode)) ? 1 : 0.1);
 

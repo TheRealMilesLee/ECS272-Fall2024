@@ -47,11 +47,14 @@ const onResize = (targets) =>
   });
 };
 
+
 /**
- * @description Generates the overall view for Graph1.
- * @name Graph1_OverallView
- * @returns {string} HTML string containing a div with an SVG element for
- * Graph1.
+ * @brief Generates the HTML structure for the overall view of used car sold situation.
+ *
+ * This function returns a string containing a div with an SVG element and a description.
+ * The div has an id of 'parallel-coordinates-container-graph1' and the SVG has an id of 'Graph1'.
+ *
+ * @returns {string} The HTML string for the overall view of used car sold situation.
  */
 export const Graph1_OverallView = () => (
   `<div id='parallel-coordinates-container-graph1'>
@@ -60,24 +63,32 @@ export const Graph1_OverallView = () => (
     </div>`
 );
 
+
 /**
- * @description Generates the HTML structure for the detailed view of Graph2.
- * @name Graph2_DetailView
- * @returns {string} The HTML string for the detailed view of Graph2.
+ * @brief Generates the HTML structure for the detailed view of Graph 2.
+ *
+ * This function returns a string containing a div element with an SVG element
+ * and a description for Graph 2, which shows the correlation between Year and
+ * Average Price for Used Cars.
+ *
+ * @returns {string} The HTML string for the detailed view of Graph 2.
  */
 export const Graph2_DetailView = () => (
   `<div id='pie-container-graph2'>
       <svg id='Graph2'></svg>
-      <i>  <b> Graph 2. </b> Odometer distribution  </i>
-    </div>
-    `
+      <i> <b> Graph 2. </b> Correlation between Year and Average Price for Used Cars </i>
+    </div>`
 );
 
+
 /**
- * @description Generates the HTML structure for the detailed view of Graph
- * 3.
- * @name Graph3_DetailView
- * @returns {string} The HTML string containing a div with an SVG element.
+ * @brief Generates the HTML structure for the detailed view of Graph 3.
+ *
+ * This function returns a string containing the HTML structure for displaying
+ * Graph 3, which shows the percentage of cars sold by region. The HTML includes
+ * a container div with an SVG element and a descriptive text.
+ *
+ * @returns {string} The HTML structure for the detailed view of Graph 3.
  */
 export const Graph3_DetailView = () => (
   `<div id='bar-container-graph3'>
@@ -89,12 +100,12 @@ export const Graph3_DetailView = () => (
 const chartObserver = new ResizeObserver(debounce(onResize, 100));
 
 
-/* For graph 1, we would like to draw a parallel coordinates chart. The
-vertical lines would be the year, model, make, body, odometer, and price of
-the cars. By connecting those lines, we can see the relationship between the
-car attributes and the price. Keep in mind here, the prince and odometer are
-binned into ranges for better performance. To do that, we
-need to cleanup our data first.*/
+/** For graph 1, we would like to draw a Sankey chart. The
+* vertical lines would be the year, model, make, body, odometer, and price of
+* the cars. By connecting those lines, we can see the relationship between the
+* car attributes and the price. Keep in mind here, the prince and odometer are
+* binned into ranges for better performance. To do that, we
+* need to cleanup our data first.*/
 
 /**
  * @brief Mounts the chart for Graph1.
@@ -108,20 +119,20 @@ export function mountChart1()
   chartObserver.observe(Graph1Container);
 }
 
-/** For this chart, we want to see how many cars were being sold for each car
- * makers, we especially care for the non-luxury brands and more consider for
- * the family use. So it has to be a selection for the majority. We will use
- * a pie chart to demonstrate this by showing the percentage of each car
- * brand sell situation.*/
+/** For this chart, we want to see the correlation between year range and car price.
+ * By looking at this chart, we want to find out how does the year affecting the car price.
+ * So we will be using a line chart, where X axis is the year range and the Y axis is the average price
+ * of the car. By showing the line, we could have a trend of how this correlation change. */
 export function mountChart2()
 {
   let Graph2Container = document.querySelector('#pie-container-graph2');
   chartObserver.observe(Graph2Container);
 }
 
-/** For the third chart, we would like to see the distribution of buyer's
- * choice based on years. To be more specific, we would like to see how many
- * cars were sold in each year. We will use a bar chart to demostrate this */
+/** For this chart, we would like to see the distribution of the manufactors. The general view would be region based,
+ * so we could choose our car based on whether is a Japanese maker or it's a American maker. Then, by selecting the
+ * region in chart 1, this chart would transfer into show the distribution of the manufactors in that region.
+ */
 export function mountChart3()
 {
   let Graph3Container = document.querySelector('#bar-container-graph3');
