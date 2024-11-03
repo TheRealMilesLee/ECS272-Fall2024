@@ -127,4 +127,47 @@ export function Graph2_Detail()
     .style("font-size", "10px")
     .text(d => d.year);
 
+  // Add a group for the tooltip and dashed line
+  const tooltipGroup = chartContainer_graph2.append("g")
+    .attr("class", "tooltip-group")
+    .style("display", "none");
+
+  tooltipGroup.append("text")
+    .attr("class", "tooltip-text")
+    .attr("text-anchor", "middle")
+    .attr("font-size", "12px")
+    .attr("fill", "black")
+    .style("font-weight", "bold");
+
+  // Add data points to the line chart
+  chartContainer_graph2.selectAll(".data-point")
+    .data(recieved_clean_result)
+    .enter()
+    .append("circle")
+    .attr("class", "data-point")
+    .attr("cx", d => x(d.year) + x.bandwidth() / 2)
+    .attr("cy", d => y(d.price))
+    .attr("r", 5)
+    .attr("fill", d => colors(years.indexOf(d.year)))
+    .on("mouseover", function (event, d)
+    {
+      d3.select(this)
+        .attr("r", 7);
+
+      // Show the tooltip
+      tooltipGroup.style("display", null)
+        .attr("transform", `translate(${ x(d.year) + x.bandwidth() / 2 }, ${ y(d.price) - 10 })`);
+
+      // Update the tooltip text
+      tooltipGroup.select(".tooltip-text")
+        .text(`$${ d.price.toFixed(2) }`);
+    })
+    .on("mouseout", function ()
+    {
+      d3.select(this)
+        .attr("r", 5);
+      tooltipGroup.style("display", "none");
+    });
+
+
 }
