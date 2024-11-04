@@ -62,17 +62,14 @@ export function Graph3_Detail()
   {
     const { category, value } = event.detail;
 
-    // 先判断是否是二次点击
     if (category === null && value === null)
     {
-      // 如果是点击相同的区域，重置回区域视图
       currentState.view = 'region';
       currentState.selectedRegion = null;
       drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius);
     }
     else
     {
-      // 如果是点击不同区域，且是region类别
       if (category === 'region')
       {
         currentState.view = 'manufacturer';
@@ -206,8 +203,6 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
     .attr("y", 10)
     .style("font-size", "10px")
     .text(d => d.category);
-
-
 }
 
 function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius)
@@ -251,7 +246,6 @@ function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie
       percentage: (otherTotal / total) * 100
     });
   }
-
   drawChart(pieData, pie, arc, color, chartContainer_pie, arcHover, radius);
 }
 

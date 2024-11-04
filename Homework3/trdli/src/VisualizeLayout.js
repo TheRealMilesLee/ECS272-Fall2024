@@ -59,7 +59,7 @@ const onResize = (targets) =>
 export const Graph1_OverallView = () => (
   `<div id='parallel-coordinates-container-graph1'>
         <svg id='Graph1'></svg>
-        <i>  <b> Graph 1. </b> Overall View of used car sold situation. (Click region to learn more)</i>
+        <i>  <b> Graph 1. </b> Overall View of used car sold situation. (Click region and year to learn more)</i>
     </div>`
 );
 

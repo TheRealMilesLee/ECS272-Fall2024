@@ -74,12 +74,12 @@ export function Graph1_Overall()
     .extent([[1, 1], [width - 1, height - 5]])
     .nodeSort((a, b) =>
     {
-      // 按列进行条件排序
+
       if (a.layer === 1 || a.layer === 4 || a.layer === 5)
       {
-        return d3.ascending(a.value, b.value); // 第1, 4, 5竖列按数字升序排序
+        return d3.ascending(a.value, b.value);
       }
-      return null; // 其他列保留默认顺序
+      return null;
     });
 
   // Create sankey data
@@ -104,10 +104,10 @@ export function Graph1_Overall()
   };
 
 
-  // 在 SVG 中创建 defs 容器用于渐变
+
   const defs = svg.append("defs");
 
-  // 动态创建渐变
+
   const createGradient = (id, colors) =>
   {
     const gradient = defs.append("linearGradient")
@@ -121,21 +121,20 @@ export function Graph1_Overall()
     gradient.append("stop").attr("offset", "100%").attr("stop-color", colors[1]);
   };
 
-  // 获取渐变颜色的函数
+
   const getColor = (source) =>
   {
-    // 从 source 提取类别前缀
-    const category = source.split('-')[0]; // 现在会是 "odometer" 等
+
+    const category = source.split('-')[0];
     const gradientId = `${ category }-gradient`;
 
-    // 检查 defs 中是否已存在该渐变
+
     if (!defs.select(`#${ gradientId }`).node())
     {
-      const colors = colorTransitions[category]; // 根据类别提取颜色
+      const colors = colorTransitions[category];
       if (colors) createGradient(gradientId, colors);
     }
 
-    // 返回渐变 ID,用于 stroke 填充
     return `url(#${ gradientId })`;
   };
 
@@ -204,8 +203,6 @@ export function Graph1_Overall()
     { category: 'odometer', color: colorTransitions["odometer"][0] },
     { category: 'price', color: colorTransitions["odometer"][1] }
   ];
-
-
 
   const legendItem = legend.selectAll("g")
     .data(legendData)
