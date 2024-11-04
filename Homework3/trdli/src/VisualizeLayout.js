@@ -59,7 +59,7 @@ const onResize = (targets) =>
 export const Graph1_OverallView = () => (
   `<div id='parallel-coordinates-container-graph1'>
         <svg id='Graph1'></svg>
-        <i>  <b> Graph 1. </b> Overall View of used car sold situation. </i>
+        <i>  <b> Graph 1. </b> Overall View of used car sold situation. (Click region to learn more)</i>
     </div>`
 );
 
@@ -76,7 +76,7 @@ export const Graph1_OverallView = () => (
 export const Graph2_DetailView = () => (
   `<div id='pie-container-graph2'>
       <svg id='Graph2'></svg>
-      <i> <b> Graph 2. </b> Correlation between Year and Average Price for Used Cars </i>
+      <i> <b> Graph 2. </b> Correlation between Year and Average Price for Used Cars (Hover on the data point to learn more)</i>
     </div>`
 );
 

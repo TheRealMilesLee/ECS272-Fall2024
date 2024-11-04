@@ -11,15 +11,13 @@ import { column_from_csv } from './csvReadIn.js';
 function categorizeYear(year)
 {
   const yearRanges = [
-    { start: 1980, end: 1985, label: '1980-1985' },
-    { start: 1986, end: 1990, label: '1986-1990' },
-    { start: 1991, end: 1995, label: '1991-1995' },
+    { start: 1985, end: 1989, label: '1985-1989' },
+    { start: 1990, end: 1995, label: '1990-1995' },
     { start: 1996, end: 2000, label: '1996-2000' },
     { start: 2001, end: 2005, label: '2001-2005' },
     { start: 2006, end: 2010, label: '2006-2010' },
     { start: 2011, end: 2015, label: '2011-2015' },
-    { start: 2016, end: 2020, label: '2016-2020' },
-    { start: 2021, end: 2025, label: '2021-2025' }
+    { start: 2016, end: 2020, label: '2016-2020' }
   ];
 
   for (const range of yearRanges)
@@ -198,7 +196,22 @@ export function Graph2_data_cleaning()
     };
   });
 
-  return FinalData;
+  const partialYearRangeData = d3.group(column_from_csv, d => d.year);
+
+  const yearRangeData = Array.from(partialYearRangeData, ([year, values]) =>
+  {
+    const totalPrices = values.reduce((sum, d) => sum + parseInt(d.price), 0);
+    const averagePrice = totalPrices / values.length;
+    const ActuralYear = year;
+    return {
+      year: ActuralYear,
+      price: averagePrice
+    };
+  }).filter(d => d !== null);
+
+  console.log(yearRangeData);
+
+  return { FinalData, yearRangeData };
 }
 
 

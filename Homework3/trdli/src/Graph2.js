@@ -19,16 +19,63 @@ export function Graph2_Detail()
     .attr("transform", `translate(${ margin.left }, ${ margin.top })`);
 
   // Clean the data and get the grouped data
-  const recieved_clean_result = Graph2_data_cleaning();
+  const data_cleaned = Graph2_data_cleaning();
+  const recieved_clean_result = data_cleaned.FinalData;
+  const yearRangeData = data_cleaned.yearRangeData;
+
+  // Track the current view state
+  let currentState =
+  {
+    view: 'year',
+    selectedRegion: null
+  };
+
+  // Define the event listener as a named function
+  function onNodeSelected(event)
+  {
+    const { category, value } = event.detail;
+
+    // Check if it's a second click
+    if (category === null && value === null)
+    {
+      // If it's a click on the same region, reset to the year view
+      currentState.view = 'year';
+      currentState.selectedRegion = null;
+      drawChart(recieved_clean_result, width, height, chartContainer_graph2);
+    }
+    else
+    {
+      // If clicked is different from the current view, update the chart
+      if (category === 'year')
+      {
+        currentState.view = 'year';
+        currentState.selectedRegion = value;
+        updateChart(value, yearRangeData, width, height, chartContainer_graph2);
+      }
+    }
+  }
+
+  // Remove any existing event listeners before adding new one
+  window.removeEventListener('nodeSelected', onNodeSelected);
+  window.addEventListener('nodeSelected', onNodeSelected);
+
+  // Initial draw
+  drawChart(recieved_clean_result, width, height, chartContainer_graph2);
+}
+
+function drawChart(data, width, height, chartContainer_graph2)
+{
+  // Clear previous chart
+  chartContainer_graph2.selectAll("*").remove();
 
   // Set up the x and y axis
   const x = d3.scaleBand()
-    .domain(recieved_clean_result.map(d => d.year))
+    .domain(data.map(d => d.year))
     .range([0, width])
     .padding(0.1);
 
   const y = d3.scaleLinear()
-    .domain([d3.min(recieved_clean_result, d => d.price), d3.max(recieved_clean_result, d => d.price)])
+    .domain([0, d3.max(data, d => d.price)]) // Start y-axis from 0
     .range([height, 0]);
 
   // Create the x and y axis
@@ -58,7 +105,7 @@ export function Graph2_Detail()
     .attr("y2", "0%");
 
   // Define gradient stops based on year range
-  const years = recieved_clean_result.map(d => d.year);
+  const years = data.map(d => d.year);
   const colors = d3.scaleLinear()
     .domain([0, years.length - 1])
     .range(["blue", "purple"]);
@@ -72,7 +119,7 @@ export function Graph2_Detail()
 
   // Append the path for the line chart
   const path = chartContainer_graph2.append("path")
-    .datum(recieved_clean_result)
+    .datum(data)
     .attr("fill", "none")
     .attr("stroke-width", 5)
     .attr("d", line)
@@ -110,7 +157,7 @@ export function Graph2_Detail()
 
   // Create the color legend next to the line chart
   const colorLegend = chartContainer_graph2.selectAll(".color-legend")
-    .data(recieved_clean_result)
+    .data(data)
     .enter()
     .append("g")
     .attr("class", "color-legend")
@@ -141,7 +188,7 @@ export function Graph2_Detail()
 
   // Add data points to the line chart
   chartContainer_graph2.selectAll(".data-point")
-    .data(recieved_clean_result)
+    .data(data)
     .enter()
     .append("circle")
     .attr("class", "data-point")
@@ -168,6 +215,20 @@ export function Graph2_Detail()
         .attr("r", 5);
       tooltipGroup.style("display", "none");
     });
+}
 
+function updateChart(value, yearRangeData, width, height, chartContainer_graph2)
+{
+  let yearRange = [];
+  let recievedYear = parseInt(value);
+  for (let index = 0; index < 5; index++)
+  {
+    yearRange.push(index + recievedYear);
+  }
 
+  // Filter data based on the selected year range
+  const filteredData = yearRangeData.filter(d => yearRange.includes(d.year));
+  console.log(filteredData);
+  // Redraw the chart with the filtered data
+  drawChart(filteredData, width, height, chartContainer_graph2);
 }

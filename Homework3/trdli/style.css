@@ -7,13 +7,18 @@
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
   background: linear-gradient(45deg, #1a1a1a, #3a3a3a, #5a5a5a);
+  background-image: url('./data/pic/Warp-2.jpg');
+  background-size: cover;
+  background-attachment: fixed;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 body {
   font-family: inherit;
 }
 
-.Greeting_div, .grid-container > div, .footer {
+.grid-container > div, .footer {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -22,10 +27,13 @@ body {
 }
 
 .Greeting_div {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: inherit;
   flex-direction: column;
   font-weight: bold;
-  color: #1e1e1e;
-  text-shadow: #201e29;
+  color: aliceblue;
 }
 
 .MainBody {

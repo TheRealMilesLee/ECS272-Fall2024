@@ -151,7 +151,9 @@ export function Graph1_Overall()
     .attr("d", sankeyLinkHorizontal())
     .attr("stroke", d => getColor(d.source.name))
     .attr("stroke-width", d => Math.max(1, d.width))
-    .style("opacity", 0.6);
+    .style("opacity", 0.6)
+    .transition()
+    .duration(500);
 
   // add nodes
   const nodeGroup = svg.append("g");
