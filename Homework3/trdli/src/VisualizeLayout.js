@@ -6,42 +6,34 @@ import { Graph3_Detail } from './Graph3.js';
 import { column_from_csv } from './csvReadIn.js';
 
 export let size = { width: 0, height: 0 };
+
 /**
- * Handles the resize event for specified target elements and redraws the
- * corresponding graphs.
- * @param {Array} targets - An array of ResizeObserverEntry objects
- * representing the elements being resized.
- * @param {ResizeObserverEntry} targets[].target - The target element being
- * resized.
- * @param {DOMRectReadOnly} targets[].contentRect - The new size of the
- * target element.
- * The function checks if the resized element's ID matches one of the
- * predefined graph container IDs. If it matches, it updates the size and
- * redraws the corresponding graph using D3.js.
+ * @brief Handles the resize event for specified target elements and redraws the corresponding graphs.
+ *
+ * @param {Array} targets - An array of ResizeObserverEntry objects representing the elements being resized.
+ *
+ * The function checks if the resized element's ID is one of the specified graph IDs ('Sankey-Graph1', 'LineChart-Graph2', 'PieChart-Graph3').
+ * If it is, it retrieves the new size of the element and redraws the corresponding graph using D3.js.
+ *
+ * The graphMap object maps each graph ID to its corresponding selector and redraw function.
+ * The function removes all existing elements within the graph's container before calling the redraw function.
  */
 const onResize = (targets) =>
 {
   targets.forEach(target =>
   {
     const targetId = target.target.getAttribute('id');
-    if (!['parallel-coordinates-container-graph1', 'pie-container-graph2',
-      'bar-container-graph3'].includes(targetId)) return;
-
-    size = {
-      width: target.contentRect.width, height:
-        target.contentRect.height
-    };
+    if (!['Sankey-Graph1', 'LineChart-Graph2', 'PieChart-Graph3'].includes(targetId)) return;
+    size = { width: target.contentRect.width, height: target.contentRect.height };
     if (isEmpty(size) || isEmpty(column_from_csv)) return;
-
     const graphMap = {
-      'parallel-coordinates-container-graph1': {
+      'Sankey-Graph1': {
         selector: '#Graph1',
         redraw: Graph1_Overall
       },
-      'pie-container-graph2': { selector: '#Graph2', redraw: Graph2_Detail },
-      'bar-container-graph3': { selector: '#Graph3', redraw: Graph3_Detail }
+      'LineChart-Graph2': { selector: '#Graph2', redraw: Graph2_Detail },
+      'PieChart-Graph3': { selector: '#Graph3', redraw: Graph3_Detail }
     };
-
     d3.select(graphMap[targetId].selector).selectAll('*').remove();
     graphMap[targetId].redraw();
   });
@@ -52,12 +44,12 @@ const onResize = (targets) =>
  * @brief Generates the HTML structure for the overall view of used car sold situation.
  *
  * This function returns a string containing a div with an SVG element and a description.
- * The div has an id of 'parallel-coordinates-container-graph1' and the SVG has an id of 'Graph1'.
+ * The div has an id of 'Sankey-Graph1' and the SVG has an id of 'Graph1'.
  *
  * @returns {string} The HTML string for the overall view of used car sold situation.
  */
 export const Graph1_OverallView = () => (
-  `<div id='parallel-coordinates-container-graph1'>
+  `<div id='Sankey-Graph1'>
         <svg id='Graph1'></svg>
         <i>  <b> Graph 1. </b> Overall View of used car sold situation. (Click region and year to learn more)</i>
     </div>`
@@ -74,7 +66,7 @@ export const Graph1_OverallView = () => (
  * @returns {string} The HTML string for the detailed view of Graph 2.
  */
 export const Graph2_DetailView = () => (
-  `<div id='pie-container-graph2'>
+  `<div id='LineChart-Graph2'>
       <svg id='Graph2'></svg>
       <i> <b> Graph 2. </b> Correlation between Year and Average Price for Used Cars (Hover on the data point to learn more)</i>
     </div>`
@@ -91,7 +83,7 @@ export const Graph2_DetailView = () => (
  * @returns {string} The HTML structure for the detailed view of Graph 3.
  */
 export const Graph3_DetailView = () => (
-  `<div id='bar-container-graph3'>
+  `<div id='PieChart-Graph3'>
         <svg id='Graph3'></svg>
         <i> <b> Graph 3. </b> Percentage of Cars Sold by Region </i>
     </div>`
@@ -106,16 +98,9 @@ const chartObserver = new ResizeObserver(debounce(onResize, 100));
 * car attributes and the price. Keep in mind here, the prince and odometer are
 * binned into ranges for better performance. To do that, we
 * need to cleanup our data first.*/
-
-/**
- * @brief Mounts the chart for Graph1.
- * @function mountChart1
- * @returns {void}
- */
 export function mountChart1()
 {
-  let Graph1Container =
-    document.querySelector('#parallel-coordinates-container-graph1');
+  let Graph1Container = document.querySelector('#Sankey-Graph1');
   chartObserver.observe(Graph1Container);
 }
 
@@ -125,7 +110,7 @@ export function mountChart1()
  * of the car. By showing the line, we could have a trend of how this correlation change. */
 export function mountChart2()
 {
-  let Graph2Container = document.querySelector('#pie-container-graph2');
+  let Graph2Container = document.querySelector('#LineChart-Graph2');
   chartObserver.observe(Graph2Container);
 }
 
@@ -135,7 +120,7 @@ export function mountChart2()
  */
 export function mountChart3()
 {
-  let Graph3Container = document.querySelector('#bar-container-graph3');
+  let Graph3Container = document.querySelector('#PieChart-Graph3');
   chartObserver.observe(Graph3Container);
 }
 

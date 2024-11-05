@@ -1,4 +1,5 @@
-:root {
+:root
+{
   font-family: -apple-system, BlinkMacSystemFont, "San Francisco", "Helvetica Neue", Helvetica, Arial, sans-serif;
   font-size: 1rem;
   font-synthesis: none;
@@ -14,11 +15,9 @@
   background-position: center;
 }
 
-body {
-  font-family: inherit;
-}
-
-.grid-container > div, .footer {
+/* Graph container settings  and footer */
+.grid-container > div, .footer
+{
   display: flex;
   justify-content: center;
   align-items: center;
@@ -26,7 +25,9 @@ body {
   background: rgba(255, 255, 255, .5);
 }
 
-.Greeting_div {
+/* Header */
+.Greeting_div
+{
   display: flex;
   justify-content: center;
   align-items: center;
@@ -36,12 +37,9 @@ body {
   color: aliceblue;
 }
 
-.MainBody {
-  display: flex;
-  flex-direction: column;
-}
-
-.grid-container {
+/* Div for three graphs */
+.grid-container
+{
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto;
@@ -51,27 +49,32 @@ body {
   height: 100%;
 }
 
-.grid-container > div {
+.grid-container > div
+{
   font-size: 1rem;
   border-radius: 25px;
 }
 
-.row1 {
+.row1
+{
   grid-column: 1 / 3;
   grid-row: 1 / 2;
 }
 
-.row2-left {
+.row2-left
+{
   grid-column: 1 / 2;
   grid-row: 2 / 3;
 }
 
-.row2-right {
+.row2-right
+{
   grid-column: 2 / 4;
   grid-row: 2 / 3;
 }
 
-#parallel-coordinates-container-graph1, #pie-container-graph2, #bar-container-graph3 {
+#Sankey-Graph1, #LineChart-Graph2, #PieChart-Graph3
+{
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -79,34 +82,19 @@ body {
   height: 100%;
 }
 
-#pie-container-graph2, #bar-container-graph3 {
+#LineChart-Graph2, #PieChart-Graph3
+{
   height: 50vh;
 }
 
-.text-muted {
-  color: #6c757d;
-}
-
-.footer {
-  font-size: 1rem;
-  border-radius: 10px;
-}
-
-li {
-  font-weight: bold;
-  color: #1e1e1e;
-}
-
-a:link, a:visited, a:hover, a:active {
-  text-decoration: none;
-}
-
-@keyframes fadeIn {
+/* Animation for initial loading */
+@keyframes fadeIn
+{
   from { opacity: 0; }
   to { opacity: 1; }
 }
-
-.fade-in {
+.fade-in
+{
   animation: fadeIn 0.5s ease-in;
   animation-fill-mode: forwards;
 }

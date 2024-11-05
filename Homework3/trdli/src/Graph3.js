@@ -3,6 +3,10 @@ import { size } from "./VisualizeLayout.js";
 import { column_from_csv } from './csvReadIn.js';
 import { Graph3_data_cleaning } from './graphDataCleaning.js';
 
+/** For this graph, we would like to create a pie chart to show the relationship
+ * between the region and the number of cars sold. As you click on a region in graph 1,
+ * the pie chart will change to show the distribution of the car sold of this region manufacture.
+*/
 export function Graph3_Detail()
 {
   // First, clear any existing content
@@ -49,7 +53,7 @@ export function Graph3_Detail()
   const arcHover = d3.arc().innerRadius(5).outerRadius(radius * 1.15);
 
   // Initial drawing
-  drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius);
+  drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius, true);
 
   // Track the current view state
   let currentState = {
@@ -66,7 +70,7 @@ export function Graph3_Detail()
     {
       currentState.view = 'region';
       currentState.selectedRegion = null;
-      drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius);
+      drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius, true);
     }
     else
     {
@@ -74,7 +78,14 @@ export function Graph3_Detail()
       {
         currentState.view = 'manufacturer';
         currentState.selectedRegion = value;
-        updateChart(value, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius);
+        updateChart(value, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius, true);
+      }
+      else
+      {
+        // If category is not region or null, reset to region view and do not make animation
+        currentState.view = 'region';
+        currentState.selectedRegion = null;
+        drawChart(regionPercentages, pie, arc, color, chartContainer_pie, arcHover, radius, false);
       }
     }
   }
@@ -84,7 +95,7 @@ export function Graph3_Detail()
   window.addEventListener('nodeSelected', onNodeSelected);
 }
 
-function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
+function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius, makeAnimation)
 {
   // Clear existing content
   chartContainer_pie.selectAll("*").remove();
@@ -102,7 +113,7 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
   arcs.append("path")
     .attr("fill", d => color(d.data.category))
     .transition()
-    .duration(750)
+    .duration(makeAnimation ? 750 : 0)
     .attrTween("d", function (d)
     {
       const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
@@ -157,7 +168,7 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
     });
 
   textLabels.transition()
-    .duration(750)
+    .duration(makeAnimation ? 750 : 0)
     .attrTween("transform", function (d)
     {
       const interpolate = d3.interpolate({ startAngle: 0, endAngle: 0 }, d);
@@ -205,7 +216,7 @@ function drawChart(data, pie, arc, color, chartContainer_pie, arcHover, radius)
     .text(d => d.category);
 }
 
-function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius)
+function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie, arcHover, radius, makeAnimation)
 {
   const JapaneseMakes = ['toyota', 'isuzu', 'honda', 'nissan', 'subaru', 'mazda', 'iszuzu', 'mitsubishi', 'suzuki', 'daihatsu', 'lexus', 'infiniti', 'acura', 'scion'];
   const EuropeanMakes = ['volkswagen', 'geo', 'rolls-royce', 'fisker', 'audi', 'bmw', 'mercedes-benz', 'porsche', 'volvo', 'saab', 'fiat', 'alfa', 'jaguar', 'land rover', 'mini', 'smart', 'bentley', 'rolls royce', 'aston martin', 'lotus', 'maserati', 'lamborghini', 'ferrari'];
@@ -246,7 +257,7 @@ function updateChart(region, manufactorData, pie, arc, color, chartContainer_pie
       percentage: (otherTotal / total) * 100
     });
   }
-  drawChart(pieData, pie, arc, color, chartContainer_pie, arcHover, radius);
+  drawChart(pieData, pie, arc, color, chartContainer_pie, arcHover, radius, makeAnimation);
 }
 
 function midAngle(d)

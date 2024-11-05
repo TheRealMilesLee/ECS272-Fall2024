@@ -1,6 +1,8 @@
+/**
+ * @brief This file is to perform the data cleaning for each graph.
+ */
 import * as d3 from 'd3';
 import { column_from_csv } from './csvReadIn.js';
-
 
 /**
  * Categorizes a given year into predefined year ranges.
@@ -152,9 +154,17 @@ function categoriesPrice(price)
   }
 }
 
-
-
-
+/**
+ * Cleans the data for graph 1 by categorizing and filtering unique entries.
+ *
+ * @function graph1_data_cleaning
+ * @returns {Array<Object>} An array of cleaned data objects with unique year, region, and body combinations.
+ *
+ * @remarks
+ * This function processes the data by categorizing the year, region, body, odometer, and price fields.
+ * It ensures that only unique combinations of year, region, and body are included in the final output.
+ * The odometer and price fields are categorized into numeric ranges.
+ */
 export function graph1_data_cleaning()
 {
   const uniqueEntries = new Set();
@@ -170,23 +180,33 @@ export function graph1_data_cleaning()
     {
       uniqueEntries.add(uniqueKey);
       return {
-        year: year,
-        region: region,
-        body: body,
-        odometer: odometer,  // Use numeric ranges
-        price: price  // Use numeric ranges
+        year: year, // Categorical (Year Ranges)
+        region: region, // Categorical (Region)
+        body: body, // Categorical (Body Type)
+        odometer: odometer, // Categorical Ranges (Mileage Range)
+        price: price // Categorical Ranges (Price Range)
       };
     }
     return null;
   }).filter(d => d !== null);  // Filter out null entries
 }
 
+/**
+ * Cleans and processes graph data by grouping and averaging prices.
+ *
+ * @function
+ * @name Graph2_data_cleaning
+ * @returns {Object} An object containing two properties:
+ * - `CategoricalYearWithPrice`: An array of objects with `year` and `price` properties, representing the average price for each year range.
+ * - `YearWithAvgPrice`: An array of objects with `year` and `price` properties, representing the average price for each individual year.
+ */
 export function Graph2_data_cleaning()
 {
   // Group the data by the year and price categories
   const dataGrouped = d3.group(column_from_csv, d => categorizeYear(d.year));
 
-  const FinalData = Array.from(dataGrouped, ([yearRange, values]) =>
+  // Get the average price for each year range
+  const CategoricalYearWithPrice = Array.from(dataGrouped, ([yearRange, values]) =>
   {
     const totalPrices = values.reduce((sum, d) => sum + parseInt(d.price), 0);
     const averagePrice = totalPrices / values.length;
@@ -196,9 +216,11 @@ export function Graph2_data_cleaning()
     };
   });
 
-  const partialYearRangeData = d3.group(column_from_csv, d => d.year);
+  // Group the data by the year
+  const SingleYearWithPrice = d3.group(column_from_csv, d => d.year);
 
-  const yearRangeData = Array.from(partialYearRangeData, ([year, values]) =>
+  // Get the average price for each year
+  const YearWithAvgPrice = Array.from(SingleYearWithPrice, ([year, values]) =>
   {
     const totalPrices = values.reduce((sum, d) => sum + parseInt(d.price), 0);
     const averagePrice = totalPrices / values.length;
@@ -209,16 +231,18 @@ export function Graph2_data_cleaning()
     };
   }).filter(d => d !== null);
 
-  console.log(yearRangeData);
-
-  return { FinalData, yearRangeData };
+  return { CategoricalYearWithPrice, YearWithAvgPrice };
 }
 
-
-
 /**
- * @brief The function `Graph3_data_cleaning` prepares the data for a pie chart.
- * @returns {Object} An object containing the counts of cars in each make category and each individual make.
+ * Cleans and processes graph data for visualization.
+ *
+ * This function counts the number of cars in each make category and each individual make,
+ * then converts the resulting Maps to arrays suitable for use in a pie chart.
+ *
+ * @returns {Object} An object containing two arrays:
+ * - `region`: An array of objects representing the count of cars in each make category.
+ * - `manufactor`: An array of objects representing the count of cars for each individual make.
  */
 export function Graph3_data_cleaning()
 {

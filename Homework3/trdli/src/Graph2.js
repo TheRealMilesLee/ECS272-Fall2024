@@ -20,8 +20,8 @@ export function Graph2_Detail()
 
   // Clean the data and get the grouped data
   const data_cleaned = Graph2_data_cleaning();
-  const recieved_clean_result = data_cleaned.FinalData;
-  const yearRangeData = data_cleaned.yearRangeData;
+  const CategoricalYearWithPrice = data_cleaned.CategoricalYearWithPrice;
+  const YearWithAvgPrice = data_cleaned.YearWithAvgPrice;
 
   // Track the current view state
   let currentState =
@@ -41,7 +41,7 @@ export function Graph2_Detail()
       // If it's a click on the same region, reset to the year view
       currentState.view = 'year';
       currentState.selectedRegion = null;
-      drawChart(recieved_clean_result, width, height, chartContainer_graph2);
+      drawChart(CategoricalYearWithPrice, width, height, chartContainer_graph2, true);
     }
     else
     {
@@ -50,7 +50,13 @@ export function Graph2_Detail()
       {
         currentState.view = 'year';
         currentState.selectedRegion = value;
-        updateChart(value, yearRangeData, width, height, chartContainer_graph2);
+        updateChart(value, YearWithAvgPrice, width, height, chartContainer_graph2, true);
+      }
+      else
+      {
+        currentState.view = 'year';
+        currentState.selectedRegion = null;
+        drawChart(CategoricalYearWithPrice, width, height, chartContainer_graph2, false);
       }
     }
   }
@@ -60,10 +66,10 @@ export function Graph2_Detail()
   window.addEventListener('nodeSelected', onNodeSelected);
 
   // Initial draw
-  drawChart(recieved_clean_result, width, height, chartContainer_graph2);
+  drawChart(CategoricalYearWithPrice, width, height, chartContainer_graph2, true);
 }
 
-function drawChart(data, width, height, chartContainer_graph2)
+function drawChart(data, width, height, chartContainer_graph2, makeAnimation)
 {
   // Clear previous chart
   chartContainer_graph2.selectAll("*").remove();
@@ -128,15 +134,18 @@ function drawChart(data, width, height, chartContainer_graph2)
     .attr("stroke-linecap", "round")
     .attr("stroke-opacity", 0.8);
 
-  // Animate the line chart
-  const totalLength = path.node().getTotalLength();
+  if (makeAnimation)
+  {
+    // Animate the line chart
+    const totalLength = path.node().getTotalLength();
 
-  path.attr("stroke-dasharray", `${ totalLength } ${ totalLength }`)
-    .attr("stroke-dashoffset", totalLength)
-    .transition()
-    .duration(1000)
-    .ease(d3.easeLinear)
-    .attr("stroke-dashoffset", 0);
+    path.attr("stroke-dasharray", `${ totalLength } ${ totalLength }`)
+      .attr("stroke-dashoffset", totalLength)
+      .transition()
+      .duration(1000)
+      .ease(d3.easeLinear)
+      .attr("stroke-dashoffset", 0);
+  }
 
   // Create the x-axis label
   chartContainer_graph2.append("text")
@@ -217,7 +226,7 @@ function drawChart(data, width, height, chartContainer_graph2)
     });
 }
 
-function updateChart(value, yearRangeData, width, height, chartContainer_graph2)
+function updateChart(value, yearRangeData, width, height, chartContainer_graph2, makeAnimation)
 {
   let yearRange = [];
   let recievedYear = parseInt(value);
@@ -230,5 +239,5 @@ function updateChart(value, yearRangeData, width, height, chartContainer_graph2)
   const filteredData = yearRangeData.filter(d => yearRange.includes(d.year));
   console.log(filteredData);
   // Redraw the chart with the filtered data
-  drawChart(filteredData, width, height, chartContainer_graph2);
+  drawChart(filteredData, width, height, chartContainer_graph2, makeAnimation);
 }
